@@ -1,0 +1,19 @@
+{
+  "name": "smart-city-command-platform",
+  "version": "1.0.0",
+  "description": "AI-powered Smart City Command & Intelligence Platform for urban incident monitoring and management",
+  "scripts": {
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["smart-city", "mern", "urban-management", "ai", "incident-tracking"],
+  "author": "Team 12",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

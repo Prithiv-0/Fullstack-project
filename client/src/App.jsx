@@ -1,0 +1,100 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
+import Navbar from './components/Navbar'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import CommandCenter from './pages/CommandCenter'
+import ReportIncident from './pages/ReportIncident'
+import IncidentDetails from './pages/IncidentDetails'
+import Analytics from './pages/Analytics'
+import Departments from './pages/Departments'
+import ModuleDiagram from './pages/ModuleDiagram'
+
+// Protected Route Component
+function ProtectedRoute({ children, roles }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return children
+}
+
+function App() {
+  const { user } = useAuth()
+
+  return (
+    <div className="app">
+      {user && <Navbar />}
+      <main className={user ? 'main-with-nav' : ''}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+
+          {/* Dev/Public Module Diagram Page */}
+          <Route path="/modules" element={<ModuleDiagram />} />
+
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/report" element={
+            <ProtectedRoute>
+              <ReportIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/incidents/:id" element={
+            <ProtectedRoute>
+              <IncidentDetails />
+            </ProtectedRoute>
+          } />
+
+          {/* Official/Admin Routes */}
+          <Route path="/command-center" element={
+            <ProtectedRoute roles={['official', 'admin']}>
+              <CommandCenter />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/analytics" element={
+            <ProtectedRoute roles={['official', 'admin']}>
+              <Analytics />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/departments" element={
+            <ProtectedRoute roles={['admin']}>
+              <Departments />
+            </ProtectedRoute>
+          } />
+
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+    </div>
+  )
+}
+
+export default App
