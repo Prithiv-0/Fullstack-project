@@ -9,7 +9,10 @@ import {
     Plus,
     Command,
     Shield,
-    User
+    User,
+    Siren,
+    Mail,
+    UserCog
 } from 'lucide-react'
 import './Navbar.css'
 
@@ -28,9 +31,12 @@ function Navbar() {
     const navItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['citizen', 'official', 'admin'] },
         { path: '/report', icon: Plus, label: 'Report', roles: ['citizen', 'official', 'admin'] },
+        { path: '/emergency', icon: Siren, label: 'SOS', roles: ['citizen', 'official', 'admin'], className: 'nav-sos' },
+        { path: '/contact', icon: Mail, label: 'Contact', roles: ['citizen', 'official', 'admin'] },
         { path: '/command-center', icon: Command, label: 'Command Center', roles: ['official', 'admin'] },
         { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['official', 'admin'] },
         { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin'] },
+        { path: '/profile', icon: UserCog, label: 'Profile', roles: ['citizen', 'official', 'admin'] },
     ]
 
     return (
@@ -50,7 +56,7 @@ function Navbar() {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                                className={`nav-item ${isActive(item.path) ? 'active' : ''} ${item.className || ''}`}
                             >
                                 <item.icon size={18} />
                                 <span>{item.label}</span>

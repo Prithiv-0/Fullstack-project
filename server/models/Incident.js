@@ -94,6 +94,50 @@ const IncidentSchema = new mongoose.Schema({
         suggestedSeverity: String,
         keywords: [String]
     },
+    verification: {
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+        verifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        verifiedAt: Date,
+        onSiteInspection: {
+            type: Boolean,
+            default: false
+        },
+        inspectionNotes: String,
+        confirmedSeverity: {
+            type: String,
+            enum: ['low', 'medium', 'high', 'critical']
+        },
+        confirmedType: {
+            type: String,
+            enum: [
+                'pothole', 'traffic', 'flooding', 'streetlight', 'garbage',
+                'accident', 'water-leak', 'road-damage', 'public-safety',
+                'noise', 'illegal-parking', 'sewage', 'other'
+            ]
+        },
+        estimatedCost: Number,
+        estimatedResolutionDays: Number,
+        resourcesRequired: String,
+        actionRecommended: {
+            type: String,
+            enum: ['immediate', 'scheduled', 'monitoring', 'no-action', 'escalate']
+        },
+        verificationStatus: {
+            type: String,
+            enum: ['pending', 'verified-valid', 'verified-invalid', 'duplicate', 'needs-more-info'],
+            default: 'pending'
+        },
+        duplicateOf: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Incident'
+        }
+    },
     timeline: [{
         status: String,
         comment: String,

@@ -10,6 +10,11 @@ import IncidentDetails from './pages/IncidentDetails'
 import Analytics from './pages/Analytics'
 import Departments from './pages/Departments'
 import ModuleDiagram from './pages/ModuleDiagram'
+import EditProfile from './pages/EditProfile'
+import FeedbackForm from './pages/FeedbackForm'
+import EmergencySOS from './pages/EmergencySOS'
+import ContactDepartment from './pages/ContactDepartment'
+import VerifyIncident from './pages/VerifyIncident'
 
 // Protected Route Component
 function ProtectedRoute({ children, roles }) {
@@ -85,6 +90,37 @@ function App() {
           <Route path="/departments" element={
             <ProtectedRoute roles={['admin']}>
               <Departments />
+            </ProtectedRoute>
+          } />
+
+          {/* Profile & Forms */}
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/incidents/:id/feedback" element={
+            <ProtectedRoute>
+              <FeedbackForm />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/emergency" element={
+            <ProtectedRoute>
+              <EmergencySOS />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/contact" element={
+            <ProtectedRoute>
+              <ContactDepartment />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/incidents/:id/verify" element={
+            <ProtectedRoute roles={['official', 'admin']}>
+              <VerifyIncident />
             </ProtectedRoute>
           } />
 

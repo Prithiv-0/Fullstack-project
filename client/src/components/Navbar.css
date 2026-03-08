@@ -140,6 +140,21 @@
     padding-top: 0;
 }
 
+/* SOS Nav Item - Red accent for emergencies */
+.nav-item.nav-sos {
+    color: #ef4444;
+}
+
+.nav-item.nav-sos:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+}
+
+.nav-item.nav-sos.active {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
 @media (max-width: 768px) {
     .navbar-container {
         padding: 0 1rem;

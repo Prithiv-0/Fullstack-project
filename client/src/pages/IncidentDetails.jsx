@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
@@ -13,7 +13,9 @@ import {
     CheckCircle,
     XCircle,
     MessageSquare,
-    Send
+    Send,
+    Star,
+    ClipboardCheck
 } from 'lucide-react'
 import './IncidentDetails.css'
 
@@ -90,6 +92,9 @@ function IncidentDetails() {
     }
 
     const canUpdateStatus = user?.role === 'official' || user?.role === 'admin'
+    const isResolved = incident.status === 'resolved' || incident.status === 'closed'
+    const isReporter = incident.reportedBy?._id === user?.id || incident.reportedBy === user?.id
+    const canGiveFeedback = isResolved && isReporter && !incident.feedback?.rating
 
     return (
         <div className="page-container fade-in">
@@ -109,14 +114,25 @@ function IncidentDetails() {
                             {incident.status}
                         </span>
                         <span className="type-badge">{incident.type}</span>
+                        {incident.verification?.isVerified && (
+                            <span className="verified-badge">
+                                <ClipboardCheck size={12} /> Verified
+                            </span>
+                        )}
                     </div>
                     {canUpdateStatus && (
-                        <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => setShowUpdateForm(!showUpdateForm)}
-                        >
-                            Update Status
-                        </button>
+                        <div className="detail-header-actions">
+                            <Link to={`/incidents/${id}/verify`} className="btn btn-secondary btn-sm">
+                                <ClipboardCheck size={16} />
+                                Verify
+                            </Link>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowUpdateForm(!showUpdateForm)}
+                            >
+                                Update Status
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -258,6 +274,36 @@ function IncidentDetails() {
                                 </div>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {/* Feedback Section */}
+                {incident.feedback?.rating && (
+                    <div className="feedback-display-section">
+                        <h3>⭐ Citizen Feedback</h3>
+                        <div className="feedback-stars">
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <Star
+                                    key={star}
+                                    size={24}
+                                    fill={star <= incident.feedback.rating ? '#fbbf24' : 'none'}
+                                    color={star <= incident.feedback.rating ? '#fbbf24' : 'var(--text-muted)'}
+                                />
+                            ))}
+                            <span className="feedback-rating-text">{incident.feedback.rating}/5</span>
+                        </div>
+                        {incident.feedback.comment && (
+                            <p className="feedback-comment">"{incident.feedback.comment}"</p>
+                        )}
+                    </div>
+                )}
+
+                {canGiveFeedback && (
+                    <div className="feedback-cta">
+                        <Link to={`/incidents/${id}/feedback`} className="btn btn-primary btn-lg">
+                            <Star size={18} />
+                            Rate This Resolution
+                        </Link>
                     </div>
                 )}
             </div>

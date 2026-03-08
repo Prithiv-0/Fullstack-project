@@ -136,7 +136,7 @@ router.post('/', protect, [
 });
 
 // @route   PUT /api/incidents/:id
-// @desc    Update incident status/details
+// @desc    Update incident status/details/verification
 // @access  Private (Official/Admin)
 router.put('/:id', protect, authorize('official', 'admin'), async (req, res) => {
     try {
@@ -146,7 +146,7 @@ router.put('/:id', protect, authorize('official', 'admin'), async (req, res) => 
             return res.status(404).json({ success: false, error: 'Incident not found' });
         }
 
-        const { status, severity, priority, comment, assignedOfficer } = req.body;
+        const { status, severity, priority, comment, assignedOfficer, verification } = req.body;
 
         // Update fields
         if (status) {
@@ -170,6 +170,46 @@ router.put('/:id', protect, authorize('official', 'admin'), async (req, res) => 
         if (severity) incident.severity = severity;
         if (priority) incident.priority = priority;
         if (assignedOfficer) incident.assignedOfficer = assignedOfficer;
+
+        // Handle verification data
+        if (verification) {
+            incident.verification = {
+                ...incident.verification?.toObject?.() || {},
+                ...verification,
+                verifiedBy: req.user.id,
+                verifiedAt: Date.now(),
+                isVerified: true
+            };
+
+            // Update severity/type if confirmed during verification
+            if (verification.confirmedSeverity) {
+                incident.severity = verification.confirmedSeverity;
+            }
+            if (verification.confirmedType) {
+                incident.type = verification.confirmedType;
+            }
+
+            // If verification is valid and status hasn't been manually set, auto-acknowledge
+            if (verification.verificationStatus === 'verified-valid' && !status) {
+                if (incident.status === 'reported') {
+                    incident.status = 'acknowledged';
+                    if (!incident.responseTime) {
+                        incident.responseTime = Math.round((Date.now() - incident.createdAt) / 60000);
+                    }
+                }
+            }
+
+            // If invalid or duplicate, auto-reject
+            if (['verified-invalid', 'duplicate'].includes(verification.verificationStatus) && !status) {
+                incident.status = 'rejected';
+            }
+
+            incident.timeline.push({
+                status: `verification-${verification.verificationStatus}`,
+                comment: comment || `Incident verified as ${verification.verificationStatus}${verification.inspectionNotes ? ': ' + verification.inspectionNotes.substring(0, 100) : ''}`,
+                updatedBy: req.user.id
+            });
+        }
 
         await incident.save();
         await incident.populate('assignedDepartment', 'name code');

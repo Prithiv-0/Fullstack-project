@@ -1,0 +1,377 @@
+.verify-page {
+    max-width: 850px;
+}
+
+.verify-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.verify-header-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 1rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.verify-already-badge {
+    border-left: 4px solid var(--info);
+}
+
+/* Incident Summary Card */
+.verify-incident-summary {
+    background: var(--gradient-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--primary-500);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.summary-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.summary-date {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.summary-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.summary-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.summary-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+}
+
+.summary-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.summary-ai {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.type-badge-v {
+    display: inline-flex;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    background: rgba(3, 169, 244, 0.15);
+    color: var(--primary-400);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Verify Sections */
+.verify-section {
+    background: var(--gradient-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.verify-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+}
+
+/* Verification Status Grid */
+.verification-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.vs-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 1.25rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.vs-card:hover {
+    border-color: var(--vs-color);
+    color: var(--vs-color);
+}
+
+.vs-card.selected {
+    border-color: var(--vs-color);
+    color: var(--vs-color);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+
+.vs-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.vs-desc {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Checkbox */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.checkbox-wrapper input {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.checkbox-wrapper input:checked+.checkbox-custom {
+    background: var(--primary-500);
+    border-color: var(--primary-500);
+}
+
+.checkbox-wrapper input:checked+.checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.checkbox-label {
+    font-weight: 500;
+}
+
+/* Severity Selector */
+.severity-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.severity-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+}
+
+.severity-btn.severity-low:hover,
+.severity-btn.severity-low.selected {
+    border-color: var(--severity-low);
+    color: var(--severity-low);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.severity-btn.severity-medium:hover,
+.severity-btn.severity-medium.selected {
+    border-color: var(--severity-medium);
+    color: var(--severity-medium);
+    background: rgba(234, 179, 8, 0.1);
+}
+
+.severity-btn.severity-high:hover,
+.severity-btn.severity-high.selected {
+    border-color: var(--severity-high);
+    color: var(--severity-high);
+    background: rgba(249, 115, 22, 0.1);
+}
+
+.severity-btn.severity-critical:hover,
+.severity-btn.severity-critical.selected {
+    border-color: var(--severity-critical);
+    color: var(--severity-critical);
+    background: rgba(220, 38, 38, 0.1);
+}
+
+/* Form Row layouts */
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Action Grid */
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+    color: var(--text-secondary);
+}
+
+.action-card:hover {
+    border-color: var(--action-color);
+}
+
+.action-card.selected {
+    border-color: var(--action-color);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.action-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--action-color);
+    flex-shrink: 0;
+    opacity: 0.4;
+    transition: opacity var(--transition-fast);
+}
+
+.action-card.selected .action-dot {
+    opacity: 1;
+    box-shadow: 0 0 8px var(--action-color);
+}
+
+.action-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.action-desc {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Actions */
+.verify-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .verification-status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row-2,
+    .form-row-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .severity-selector {
+        flex-wrap: wrap;
+    }
+
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .verify-actions {
+        flex-direction: column;
+    }
+
+    .verify-actions .btn {
+        width: 100%;
+    }
+
+    .summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

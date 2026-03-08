@@ -146,4 +146,67 @@ router.get('/:id/incidents', protect, authorize('official', 'admin'), async (req
     }
 });
 
+// @route   POST /api/departments/contact
+// @desc    Send a message to a department
+// @access  Private
+router.post('/contact', protect, async (req, res) => {
+    try {
+        const ContactMessage = require('../models/ContactMessage');
+        const { department, subject, message, priority } = req.body;
+
+        if (!department || !subject || !message) {
+            return res.status(400).json({
+                success: false,
+                error: 'Department, subject, and message are required'
+            });
+        }
+
+        const dept = await Department.findById(department);
+        if (!dept) {
+            return res.status(404).json({ success: false, error: 'Department not found' });
+        }
+
+        const contactMessage = await ContactMessage.create({
+            from: req.user.id,
+            department,
+            subject,
+            message,
+            priority: priority || 'medium'
+        });
+
+        await contactMessage.populate('department', 'name code');
+        await contactMessage.populate('from', 'name email');
+
+        res.status(201).json({ success: true, data: contactMessage });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// @route   GET /api/departments/contacts
+// @desc    Get contact messages (officials see their dept, admins see all)
+// @access  Private (Official/Admin)
+router.get('/contacts', protect, authorize('official', 'admin'), async (req, res) => {
+    try {
+        const ContactMessage = require('../models/ContactMessage');
+        let query = {};
+
+        if (req.user.role === 'official' && req.user.department) {
+            query.department = req.user.department;
+        }
+
+        const messages = await ContactMessage.find(query)
+            .populate('from', 'name email phone')
+            .populate('department', 'name code')
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        res.json({ success: true, count: messages.length, data: messages });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
 module.exports = router;
