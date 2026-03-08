@@ -8,52 +8,59 @@ dotenv.config({ path: '../../.env' });
 const departments = [
     {
         name: 'Bruhat Bengaluru Mahanagara Palike',
-        code: 'BBMP',
-        description: 'Municipal Corporation handling general city services',
-        handlesIncidentTypes: ['garbage', 'other'],
-        contact: { email: 'bbmp@karnataka.gov.in', phone: '080-22975803' }
+        shortName: 'BBMP',
+        contactEmail: 'bbmp@karnataka.gov.in',
+        contactPhone: '080-22975803',
+        incidentTypes: ['garbage', 'other'],
+        slaHours: 48
     },
     {
         name: 'Public Works Department',
-        code: 'PWD',
-        description: 'Roads, bridges, and infrastructure maintenance',
-        handlesIncidentTypes: ['pothole', 'road-damage'],
-        contact: { email: 'pwd@karnataka.gov.in', phone: '080-22353553' }
+        shortName: 'PWD',
+        contactEmail: 'pwd@karnataka.gov.in',
+        contactPhone: '080-22353553',
+        incidentTypes: ['pothole', 'road_damage'],
+        slaHours: 24
     },
     {
         name: 'Traffic Management Centre',
-        code: 'TRAFFIC',
-        description: 'Traffic control and accident management',
-        handlesIncidentTypes: ['traffic', 'accident', 'illegal-parking'],
-        contact: { email: 'traffic@karnataka.gov.in', phone: '080-22942222' }
+        shortName: 'TRAFFIC',
+        contactEmail: 'traffic@karnataka.gov.in',
+        contactPhone: '080-22942222',
+        incidentTypes: ['traffic', 'accident', 'illegal_parking'],
+        slaHours: 12
     },
     {
         name: 'Stormwater Drainage Department',
-        code: 'DRAINAGE',
-        description: 'Drainage, flooding, and sewage management',
-        handlesIncidentTypes: ['flooding', 'sewage'],
-        contact: { email: 'drainage@karnataka.gov.in', phone: '080-22975000' }
+        shortName: 'DRAINAGE',
+        contactEmail: 'drainage@karnataka.gov.in',
+        contactPhone: '080-22975000',
+        incidentTypes: ['flooding', 'sewage'],
+        slaHours: 24
     },
     {
         name: 'BESCOM Electrical Services',
-        code: 'ELEC',
-        description: 'Street lighting and electrical infrastructure',
-        handlesIncidentTypes: ['streetlight'],
-        contact: { email: 'bescom@karnataka.gov.in', phone: '1912' }
+        shortName: 'ELEC',
+        contactEmail: 'bescom@karnataka.gov.in',
+        contactPhone: '1912',
+        incidentTypes: ['streetlight'],
+        slaHours: 24
     },
     {
         name: 'Bangalore Water Supply Board',
-        code: 'BWSSB',
-        description: 'Water supply and pipeline maintenance',
-        handlesIncidentTypes: ['water-leak'],
-        contact: { email: 'bwssb@karnataka.gov.in', phone: '1916' }
+        shortName: 'BWSSB',
+        contactEmail: 'bwssb@karnataka.gov.in',
+        contactPhone: '1916',
+        incidentTypes: ['water_leak'],
+        slaHours: 12
     },
     {
         name: 'City Police',
-        code: 'POLICE',
-        description: 'Law enforcement and public safety',
-        handlesIncidentTypes: ['public-safety', 'noise'],
-        contact: { email: 'police@karnataka.gov.in', phone: '100' }
+        shortName: 'POLICE',
+        contactEmail: 'police@karnataka.gov.in',
+        contactPhone: '100',
+        incidentTypes: ['safety_issue', 'noise'],
+        slaHours: 4
     }
 ];
 
@@ -77,23 +84,40 @@ const seedDatabase = async () => {
                 name: 'City Admin',
                 email: 'admin@smartcity.gov.in',
                 password: 'admin123',
-                role: 'admin'
+                role: 'admin',
+                zone: 'Central'
             });
             console.log('Created admin user (admin@smartcity.gov.in / admin123)');
         }
 
-        // Create sample official
+        // Create government official
         const officialExists = await User.findOne({ email: 'official@smartcity.gov.in' });
         if (!officialExists) {
-            const bbmpDept = await Department.findOne({ code: 'BBMP' });
+            const bbmpDept = await Department.findOne({ shortName: 'BBMP' });
             await User.create({
                 name: 'BBMP Officer',
                 email: 'official@smartcity.gov.in',
                 password: 'official123',
-                role: 'official',
-                department: bbmpDept?._id
+                role: 'government_official',
+                department: bbmpDept?._id,
+                zone: 'Central'
             });
             console.log('Created official user (official@smartcity.gov.in / official123)');
+        }
+
+        // Create field officer
+        const fieldOfficerExists = await User.findOne({ email: 'officer@smartcity.gov.in' });
+        if (!fieldOfficerExists) {
+            const pwdDept = await Department.findOne({ shortName: 'PWD' });
+            await User.create({
+                name: 'PWD Field Officer',
+                email: 'officer@smartcity.gov.in',
+                password: 'officer123',
+                role: 'field_officer',
+                department: pwdDept?._id,
+                zone: 'Central'
+            });
+            console.log('Created field officer (officer@smartcity.gov.in / officer123)');
         }
 
         // Create sample citizen
@@ -104,16 +128,18 @@ const seedDatabase = async () => {
                 email: 'citizen@example.com',
                 password: 'citizen123',
                 role: 'citizen',
-                phone: '9876543210'
+                phone: '9876543210',
+                zone: 'Central'
             });
             console.log('Created citizen user (citizen@example.com / citizen123)');
         }
 
         console.log('\n✅ Database seeded successfully!');
         console.log('\nTest Users:');
-        console.log('  Admin: admin@smartcity.gov.in / admin123');
-        console.log('  Official: official@smartcity.gov.in / official123');
-        console.log('  Citizen: citizen@example.com / citizen123');
+        console.log('  Admin:           admin@smartcity.gov.in / admin123');
+        console.log('  Official:        official@smartcity.gov.in / official123');
+        console.log('  Field Officer:   officer@smartcity.gov.in / officer123');
+        console.log('  Citizen:         citizen@example.com / citizen123');
 
         process.exit(0);
     } catch (err) {

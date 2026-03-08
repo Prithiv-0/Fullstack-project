@@ -1,249 +1,99 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
-import {
-    AlertTriangle,
-    MapPin,
-    Send,
-    Loader,
-    CheckCircle,
-    AlertCircle,
-    Siren,
-    Phone,
-    Flame,
-    Zap,
-    HeartPulse,
-    ShieldAlert
-} from 'lucide-react'
+import { AlertTriangle, MapPin, Loader, Phone } from 'lucide-react'
 import './EmergencySOS.css'
 
-const emergencyTypes = [
-    { value: 'fire', label: 'Fire', icon: Flame, color: '#ef4444' },
-    { value: 'medical', label: 'Medical', icon: HeartPulse, color: '#f59e0b' },
-    { value: 'crime', label: 'Crime', icon: ShieldAlert, color: '#8b5cf6' },
-    { value: 'accident', label: 'Accident', icon: Zap, color: '#f97316' },
-    { value: 'natural-disaster', label: 'Disaster', icon: AlertTriangle, color: '#06b6d4' },
-    { value: 'other', label: 'Other', icon: Siren, color: '#6b7280' },
-]
-
-function EmergencySOS() {
-    const navigate = useNavigate()
-
-    const [emergencyType, setEmergencyType] = useState('')
-    const [description, setDescription] = useState('')
-    const [location, setLocation] = useState({
-        coordinates: [77.5946, 12.9716],
-        address: '',
-        area: ''
-    })
+export default function EmergencySOS() {
+    const nav = useNavigate()
+    const { user } = useAuth()
+    const [form, setForm] = useState({ emergencyType: 'accident', description: '', location: { lat: '', lng: '', address: '' } })
     const [loading, setLoading] = useState(false)
-    const [success, setSuccess] = useState(false)
+    const [gpsLoading, setGpsLoading] = useState(false)
     const [error, setError] = useState('')
-    const [gettingLocation, setGettingLocation] = useState(true)
-    const [locationAcquired, setLocationAcquired] = useState(false)
+    const [success, setSuccess] = useState(false)
 
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setLocation(prev => ({
-                        ...prev,
-                        coordinates: [position.coords.longitude, position.coords.latitude]
-                    }))
-                    setLocationAcquired(true)
-                    setGettingLocation(false)
-                },
-                () => {
-                    setGettingLocation(false)
-                }
-            )
-        } else {
-            setGettingLocation(false)
-        }
-    }, [])
+    const getGPS = () => {
+        if (!navigator.geolocation) return setError('Geolocation not supported')
+        setGpsLoading(true)
+        navigator.geolocation.getCurrentPosition(
+            pos => { setForm(f => ({ ...f, location: { ...f.location, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) } })); setGpsLoading(false) },
+            err => { setError('GPS failed: ' + err.message); setGpsLoading(false) },
+            { enableHighAccuracy: true }
+        )
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
-        if (!emergencyType) {
-            setError('Please select an emergency type')
-            return
-        }
-
-        if (!description.trim()) {
-            setError('Please briefly describe the emergency')
-            return
-        }
-
-        setLoading(true)
-        setError('')
-
-        const typeMap = {
-            'fire': 'public-safety',
-            'medical': 'accident',
-            'crime': 'public-safety',
-            'accident': 'accident',
-            'natural-disaster': 'flooding',
-            'other': 'other'
-        }
-
+        if (!form.location.lat || !form.location.lng) { setError('Location is required — tap "Get My Location"'); return }
+        setLoading(true); setError('')
         try {
-            await api.post('/incidents', {
-                title: `🚨 EMERGENCY: ${emergencyTypes.find(t => t.value === emergencyType)?.label || 'SOS'}`,
-                description: `[EMERGENCY SOS] ${description}`,
-                type: typeMap[emergencyType] || 'public-safety',
-                location: {
-                    coordinates: location.coordinates,
-                    address: location.address || 'Auto-detected location',
-                    area: location.area || ''
-                }
+            await api.post('/sos', {
+                emergencyType: form.emergencyType,
+                description: form.description,
+                location: { lat: parseFloat(form.location.lat), lng: parseFloat(form.location.lng), address: form.location.address }
             })
             setSuccess(true)
-            setTimeout(() => navigate('/dashboard'), 3000)
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to send SOS. Please call emergency services directly.')
-        } finally {
-            setLoading(false)
-        }
+        } catch (err) { setError(err.response?.data?.error || 'Failed to send SOS') }
+        setLoading(false)
     }
 
     if (success) {
         return (
-            <div className="page-container">
-                <div className="sos-success-card fade-in">
-                    <CheckCircle size={64} className="success-icon" />
-                    <h2>Emergency Reported!</h2>
-                    <p>Your SOS has been sent with <strong>CRITICAL</strong> priority.</p>
-                    <p>Authorities have been notified immediately.</p>
-                    <div className="emergency-contact-info">
-                        <Phone size={18} />
-                        <span>If in immediate danger, also call <strong>112</strong></span>
-                    </div>
-                    <p className="redirect-text">Redirecting to dashboard...</p>
-                </div>
+            <div className="page-container fade-in" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>🚨</div>
+                <h1 style={{ fontSize: '1.75rem', color: 'var(--danger)', marginBottom: '0.5rem' }}>SOS Alert Sent!</h1>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto' }}>Emergency services have been notified. Stay safe and wait for assistance.</p>
+                <button className="btn btn-primary" style={{ marginTop: '2rem' }} onClick={() => nav('/dashboard')}>Back to Dashboard</button>
             </div>
         )
     }
 
     return (
-        <div className="sos-container fade-in">
-            <div className="sos-page">
-                <div className="sos-header">
-                    <div className="sos-icon-wrapper">
-                        <Siren size={48} />
-                    </div>
-                    <h1 className="sos-title">Emergency SOS</h1>
-                    <p className="sos-subtitle">Report a critical emergency — help is on the way</p>
-                </div>
-
-                <div className="sos-emergency-banner">
-                    <Phone size={16} />
-                    <span>For life-threatening emergencies, also call <strong>112</strong> or <strong>100</strong></span>
-                </div>
-
-                <form onSubmit={handleSubmit} className="sos-form">
-                    {error && (
-                        <div className="alert alert-danger">
-                            <AlertCircle size={18} />
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Emergency Type */}
-                    <div className="form-section sos-section">
-                        <h3 className="section-label">Type of Emergency *</h3>
-                        <div className="emergency-type-grid">
-                            {emergencyTypes.map(type => {
-                                const Icon = type.icon
-                                return (
-                                    <button
-                                        key={type.value}
-                                        type="button"
-                                        className={`emergency-type-card ${emergencyType === type.value ? 'selected' : ''}`}
-                                        onClick={() => setEmergencyType(type.value)}
-                                        style={{ '--card-color': type.color }}
-                                    >
-                                        <Icon size={28} />
-                                        <span>{type.label}</span>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="form-section sos-section">
-                        <div className="form-group">
-                            <label className="form-label">What's happening? *</label>
-                            <textarea
-                                className="form-textarea"
-                                placeholder="Briefly describe the emergency situation..."
-                                value={description}
-                                onChange={(e) => { setDescription(e.target.value); setError('') }}
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="form-section sos-section">
-                        <h3 className="section-label">
-                            <MapPin size={18} />
-                            Location
-                        </h3>
-
-                        <div className="location-status">
-                            {gettingLocation ? (
-                                <span className="location-detecting">
-                                    <Loader size={14} className="spinning" /> Detecting your location...
-                                </span>
-                            ) : locationAcquired ? (
-                                <span className="location-acquired">
-                                    <CheckCircle size={14} /> Location acquired
-                                </span>
-                            ) : (
-                                <span className="location-failed">
-                                    <AlertTriangle size={14} /> Could not detect location — enter manually
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Address / Landmark</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Nearest landmark or address"
-                                value={location.address}
-                                onChange={(e) => setLocation(prev => ({ ...prev, address: e.target.value }))}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        className="sos-submit-btn"
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <><Loader size={22} className="spinning" /> Sending SOS...</>
-                        ) : (
-                            <><Siren size={22} /> Send Emergency SOS</>
-                        )}
-                    </button>
-
-                    <button
-                        type="button"
-                        className="btn btn-secondary sos-cancel"
-                        onClick={() => navigate(-1)}
-                    >
-                        Cancel
-                    </button>
-                </form>
+        <div className="page-container fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🚨</div>
+                <h1 className="page-title" style={{ color: 'var(--danger)' }}>Emergency SOS</h1>
+                <p className="page-subtitle">Send an immediate emergency alert to city authorities</p>
             </div>
+
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <form onSubmit={handleSubmit} style={{ maxWidth: 500, margin: '0 auto' }}>
+                <div className="card" style={{ marginBottom: '1.5rem', borderColor: 'rgba(239,68,68,0.3)' }}>
+                    <div className="form-group">
+                        <label className="form-label"><AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Emergency Type</label>
+                        <select className="form-select" value={form.emergencyType} onChange={e => setForm({ ...form, emergencyType: e.target.value })}>
+                            <option value="accident">Accident</option>
+                            <option value="fire">Fire</option>
+                            <option value="medical">Medical Emergency</option>
+                            <option value="crime">Crime / Threat</option>
+                            <option value="flood">Severe Flooding</option>
+                            <option value="other">Other Emergency</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Brief Description (optional)</label>
+                        <textarea className="form-textarea" placeholder="Describe the emergency..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label"><MapPin size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Your Location *</label>
+                        <button type="button" className="btn btn-danger" onClick={getGPS} disabled={gpsLoading} style={{ width: '100%', marginBottom: '0.75rem' }}>
+                            {gpsLoading ? <><Loader size={16} className="animate-spin" /> Getting GPS...</> : <><MapPin size={16} /> Get My Location</>}
+                        </button>
+                        {form.location.lat && <p style={{ fontSize: '0.85rem', color: 'var(--success)' }}>📍 Location acquired: {form.location.lat}, {form.location.lng}</p>}
+                    </div>
+                </div>
+
+                <button type="submit" className="btn btn-danger btn-lg" style={{ width: '100%', fontSize: '1.1rem' }} disabled={loading}>
+                    {loading ? 'Sending SOS...' : '🚨 SEND SOS ALERT'}
+                </button>
+
+                <div style={{ textAlign: 'center', marginTop: '1.5rem', padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: 'var(--radius-md)' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}><Phone size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> For life-threatening emergencies, also call <strong>112</strong></p>
+                </div>
+            </form>
         </div>
     )
 }
-
-export default EmergencySOS

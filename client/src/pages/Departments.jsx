@@ -1,64 +1,55 @@
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
-import { Building2, Users, Loader } from 'lucide-react'
+import { Building2, Users, Activity, Mail, ChevronRight } from 'lucide-react'
+import './ContactDepartment.css'
 
-function Departments() {
+export default function Departments() {
     const [departments, setDepartments] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        fetchDepartments()
-    }, [])
+    useEffect(() => { fetchDepts() }, [])
 
-    const fetchDepartments = async () => {
+    const fetchDepts = async () => {
         try {
             const res = await api.get('/departments')
-            setDepartments(res.data.data)
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
+            setDepartments(res.data.data || [])
+        } catch (err) { console.error(err) }
+        setLoading(false)
     }
 
-    if (loading) {
-        return <div className="loading-container"><Loader className="loading-spinner" /></div>
-    }
+    if (loading) return <div className="loading-container"><div className="loading-spinner" /><p>Loading departments...</p></div>
 
     return (
         <div className="page-container fade-in">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Departments</h1>
-                    <p className="page-subtitle">Manage city departments and their assignments</p>
+                    <h1 className="page-title"><Building2 size={28} style={{ display: 'inline', verticalAlign: 'middle' }} /> Departments</h1>
+                    <p className="page-subtitle">City departments and their current workload</p>
                 </div>
             </div>
 
-            <div className="grid-3">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                 {departments.map(dept => (
                     <div key={dept._id} className="card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                            <Building2 size={24} style={{ color: 'var(--primary-400)' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                             <div>
-                                <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>{dept.name}</h3>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dept.code}</span>
+                                <h3 style={{ fontWeight: 700, fontSize: '1.05rem' }}>{dept.name}</h3>
+                                <span className="badge badge-status">{dept.shortName}</span>
                             </div>
+                            <span style={{ fontSize: '0.8rem', color: dept.currentLoad > 10 ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                                <Activity size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Load: {dept.currentLoad || 0}
+                            </span>
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                            {dept.description || 'No description'}
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            {dept.handlesIncidentTypes?.map(type => (
-                                <span key={type} style={{
-                                    fontSize: '0.7rem',
-                                    padding: '0.2rem 0.5rem',
-                                    background: 'var(--bg-tertiary)',
-                                    borderRadius: '4px',
-                                    textTransform: 'capitalize'
-                                }}>
-                                    {type}
-                                </span>
-                            ))}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.87rem', color: 'var(--text-secondary)' }}>
+                            {dept.contactEmail && <div><Mail size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {dept.contactEmail}</div>}
+                            {dept.contactPhone && <div>📞 {dept.contactPhone}</div>}
+                            <div>⏱️ SLA: {dept.slaHours || 24}h</div>
+                            {dept.incidentTypes?.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                                    {dept.incidentTypes.map(t => <span key={t} className="badge" style={{ background: 'rgba(3,169,244,0.15)', color: 'var(--primary-400)', fontSize: '0.7rem' }}>{t.replace(/_/g, ' ')}</span>)}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -66,5 +57,3 @@ function Departments() {
         </div>
     )
 }
-
-export default Departments

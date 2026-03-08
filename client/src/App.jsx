@@ -9,12 +9,12 @@ import ReportIncident from './pages/ReportIncident'
 import IncidentDetails from './pages/IncidentDetails'
 import Analytics from './pages/Analytics'
 import Departments from './pages/Departments'
-import ModuleDiagram from './pages/ModuleDiagram'
 import EditProfile from './pages/EditProfile'
 import FeedbackForm from './pages/FeedbackForm'
 import EmergencySOS from './pages/EmergencySOS'
 import ContactDepartment from './pages/ContactDepartment'
 import VerifyIncident from './pages/VerifyIncident'
+import TrackComplaint from './pages/TrackComplaint'
 
 // Protected Route Component
 function ProtectedRoute({ children, roles }) {
@@ -52,10 +52,7 @@ function App() {
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
 
-          {/* Dev/Public Module Diagram Page */}
-          <Route path="/modules" element={<ModuleDiagram />} />
-
-          {/* Protected Routes */}
+          {/* Protected Routes — All Roles */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
@@ -63,8 +60,14 @@ function App() {
           } />
 
           <Route path="/report" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['citizen', 'field_officer', 'admin']}>
               <ReportIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/track" element={
+            <ProtectedRoute>
+              <TrackComplaint />
             </ProtectedRoute>
           } />
 
@@ -76,13 +79,13 @@ function App() {
 
           {/* Official/Admin Routes */}
           <Route path="/command-center" element={
-            <ProtectedRoute roles={['official', 'admin']}>
+            <ProtectedRoute roles={['field_officer', 'government_official', 'admin']}>
               <CommandCenter />
             </ProtectedRoute>
           } />
 
           <Route path="/analytics" element={
-            <ProtectedRoute roles={['official', 'admin']}>
+            <ProtectedRoute roles={['government_official', 'admin']}>
               <Analytics />
             </ProtectedRoute>
           } />
@@ -119,7 +122,7 @@ function App() {
           } />
 
           <Route path="/incidents/:id/verify" element={
-            <ProtectedRoute roles={['official', 'admin']}>
+            <ProtectedRoute roles={['government_official', 'admin']}>
               <VerifyIncident />
             </ProtectedRoute>
           } />

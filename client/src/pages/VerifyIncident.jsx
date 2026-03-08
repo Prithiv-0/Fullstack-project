@@ -1,462 +1,114 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
-import {
-    ArrowLeft,
-    MapPin,
-    Clock,
-    User,
-    Loader,
-    CheckCircle,
-    AlertCircle,
-    AlertTriangle,
-    Send,
-    ClipboardCheck,
-    Eye,
-    DollarSign,
-    Calendar,
-    Wrench,
-    ShieldCheck,
-    XCircle,
-    Copy,
-    Info
-} from 'lucide-react'
+import { Shield, ArrowLeft, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import './VerifyIncident.css'
 
-const verificationStatuses = [
-    { value: 'verified-valid', label: 'Valid — Confirmed', icon: CheckCircle, color: '#10b981', desc: 'Incident is genuine and needs action' },
-    { value: 'verified-invalid', label: 'Invalid — Rejected', icon: XCircle, color: '#ef4444', desc: 'False report or misinformation' },
-    { value: 'duplicate', label: 'Duplicate', icon: Copy, color: '#f59e0b', desc: 'Already reported by another citizen' },
-    { value: 'needs-more-info', label: 'Needs More Info', icon: Info, color: '#3b82f6', desc: 'Requires additional details from reporter' },
-]
-
-const actionOptions = [
-    { value: 'immediate', label: 'Immediate Action', desc: 'Deploy resources now', color: '#ef4444' },
-    { value: 'scheduled', label: 'Scheduled Repair', desc: 'Plan repair within timeline', color: '#f59e0b' },
-    { value: 'monitoring', label: 'Monitor Only', desc: 'Keep under observation', color: '#3b82f6' },
-    { value: 'no-action', label: 'No Action Needed', desc: 'Self-resolving or minor', color: '#6b7280' },
-    { value: 'escalate', label: 'Escalate', desc: 'Needs higher authority', color: '#8b5cf6' },
-]
-
-const incidentTypeOptions = [
-    { value: 'pothole', label: 'Pothole' },
-    { value: 'traffic', label: 'Traffic Issue' },
-    { value: 'flooding', label: 'Flooding' },
-    { value: 'streetlight', label: 'Street Light' },
-    { value: 'garbage', label: 'Garbage' },
-    { value: 'accident', label: 'Accident' },
-    { value: 'water-leak', label: 'Water Leak' },
-    { value: 'road-damage', label: 'Road Damage' },
-    { value: 'public-safety', label: 'Safety Issue' },
-    { value: 'noise', label: 'Noise' },
-    { value: 'illegal-parking', label: 'Illegal Parking' },
-    { value: 'sewage', label: 'Sewage' },
-    { value: 'other', label: 'Other' },
-]
-
-function VerifyIncident() {
+export default function VerifyIncident() {
     const { id } = useParams()
-    const navigate = useNavigate()
-    const { user } = useAuth()
-
+    const nav = useNavigate()
     const [incident, setIncident] = useState(null)
+    const [verificationStatus, setVerificationStatus] = useState('valid')
+    const [severityOverride, setSeverityOverride] = useState('')
+    const [notes, setNotes] = useState('')
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
-    const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
 
-    const [formData, setFormData] = useState({
-        verificationStatus: '',
-        onSiteInspection: false,
-        inspectionNotes: '',
-        confirmedSeverity: '',
-        confirmedType: '',
-        estimatedCost: '',
-        estimatedResolutionDays: '',
-        resourcesRequired: '',
-        actionRecommended: '',
-        comment: ''
-    })
-
-    useEffect(() => {
-        fetchIncident()
-    }, [id])
+    useEffect(() => { fetchIncident() }, [id])
 
     const fetchIncident = async () => {
         try {
             const res = await api.get(`/incidents/${id}`)
-            const inc = res.data.data
-            setIncident(inc)
-
-            // Pre-fill with existing values
-            setFormData(prev => ({
-                ...prev,
-                confirmedSeverity: inc.severity || '',
-                confirmedType: inc.type || '',
-                verificationStatus: inc.verification?.verificationStatus || '',
-                onSiteInspection: inc.verification?.onSiteInspection || false,
-                inspectionNotes: inc.verification?.inspectionNotes || '',
-                estimatedCost: inc.verification?.estimatedCost || '',
-                estimatedResolutionDays: inc.verification?.estimatedResolutionDays || '',
-                resourcesRequired: inc.verification?.resourcesRequired || '',
-                actionRecommended: inc.verification?.actionRecommended || '',
-            }))
-        } catch (err) {
-            setError('Failed to load incident')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }))
-        setError('')
+            setIncident(res.data.data)
+            setSeverityOverride(res.data.data?.severity || 'medium')
+        } catch (err) { setError('Failed to load incident') }
+        setLoading(false)
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
-        if (!formData.verificationStatus) {
-            setError('Please select a verification status')
-            return
-        }
-
-        if (!formData.confirmedSeverity) {
-            setError('Please confirm the severity level')
-            return
-        }
-
-        setSubmitting(true)
-        setError('')
-
+        setSubmitting(true); setError('')
         try {
-            await api.put(`/incidents/${id}`, {
-                verification: {
-                    verificationStatus: formData.verificationStatus,
-                    onSiteInspection: formData.onSiteInspection,
-                    inspectionNotes: formData.inspectionNotes,
-                    confirmedSeverity: formData.confirmedSeverity,
-                    confirmedType: formData.confirmedType,
-                    estimatedCost: formData.estimatedCost ? Number(formData.estimatedCost) : undefined,
-                    estimatedResolutionDays: formData.estimatedResolutionDays ? Number(formData.estimatedResolutionDays) : undefined,
-                    resourcesRequired: formData.resourcesRequired,
-                    actionRecommended: formData.actionRecommended,
-                },
-                comment: formData.comment || `Incident verification: ${formData.verificationStatus}`
-            })
-            setSuccess(true)
-            setTimeout(() => navigate(`/incidents/${id}`), 2000)
+            await api.put(`/incidents/${id}/verify`, { verificationStatus, severityOverride, notes })
+            nav(`/incidents/${id}`)
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to submit verification')
-        } finally {
-            setSubmitting(false)
+            setError(err.response?.data?.error || 'Verification failed')
         }
+        setSubmitting(false)
     }
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <Loader className="loading-spinner" />
-                <p>Loading incident...</p>
-            </div>
-        )
-    }
-
-    if (success) {
-        return (
-            <div className="page-container">
-                <div className="success-card fade-in">
-                    <ShieldCheck size={64} className="success-icon" />
-                    <h2>Verification Submitted!</h2>
-                    <p>The incident has been verified and updated successfully.</p>
-                    <p className="redirect-text">Redirecting to incident details...</p>
-                </div>
-            </div>
-        )
-    }
-
-    const alreadyVerified = incident?.verification?.isVerified
+    if (loading) return <div className="loading-container"><div className="loading-spinner" /><p>Loading...</p></div>
+    if (!incident) return <div className="page-container"><div className="alert alert-danger">Incident not found</div></div>
 
     return (
         <div className="page-container fade-in">
-            <button className="back-button" onClick={() => navigate(-1)}>
-                <ArrowLeft size={18} />
-                Back
-            </button>
+            <button onClick={() => nav(-1)} className="btn btn-sm btn-secondary" style={{ marginBottom: '1rem' }}><ArrowLeft size={16} /> Back</button>
 
-            <div className="verify-page">
-                <div className="verify-header">
-                    <div className="verify-header-icon">
-                        <ClipboardCheck size={36} />
-                    </div>
-                    <h1 className="page-title">Incident Verification</h1>
-                    <p className="page-subtitle">Review and verify reported incident details</p>
+            <div style={{ maxWidth: 600, margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <Shield size={36} color="var(--primary-400)" />
+                    <h1 className="page-title" style={{ marginTop: '0.5rem' }}>Verify Incident</h1>
                 </div>
 
-                {alreadyVerified && (
-                    <div className="alert alert-info verify-already-badge">
-                        <ShieldCheck size={18} />
-                        This incident was previously verified on {new Date(incident.verification.verifiedAt).toLocaleString()}.
-                        You can re-verify to update the assessment.
+                {/* Incident Summary */}
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{incident.title}</h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{incident.description}</p>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span className={`badge badge-${incident.severity}`}>{incident.severity}</span>
+                        <span className="badge badge-status">{incident.type?.replace(/_/g, ' ')}</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>📍 {incident.location?.area || incident.location?.address || ''}</span>
                     </div>
-                )}
+                </div>
 
-                {/* Incident Summary Card */}
-                {incident && (
-                    <div className="verify-incident-summary">
-                        <div className="summary-row">
-                            <div className="summary-badges">
-                                <span className={`badge badge-${incident.severity}`}>{incident.severity}</span>
-                                <span className={`status-pill status-${incident.status}`}>{incident.status}</span>
-                                <span className="type-badge-v">{incident.type}</span>
-                            </div>
-                            <span className="summary-date">
-                                <Clock size={14} />
-                                {new Date(incident.createdAt).toLocaleString()}
-                            </span>
-                        </div>
-                        <h3 className="summary-title">{incident.title}</h3>
-                        <p className="summary-desc">{incident.description}</p>
-                        <div className="summary-meta">
-                            <span><MapPin size={14} /> {incident.location?.address || 'N/A'}{incident.location?.area ? `, ${incident.location.area}` : ''}</span>
-                            <span><User size={14} /> {incident.reportedBy?.name || 'Anonymous'}</span>
-                        </div>
+                {error && <div className="alert alert-danger">{error}</div>}
 
-                        {incident.aiClassification && (
-                            <div className="summary-ai">
-                                <span>🤖 AI: {incident.aiClassification.detectedType} ({(incident.aiClassification.confidence * 100).toFixed(0)}% confidence)</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Verification Form */}
-                <form onSubmit={handleSubmit} className="verify-form">
-                    {error && (
-                        <div className="alert alert-danger">
-                            <AlertCircle size={18} />
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Section 1 — Verification Decision */}
-                    <div className="verify-section">
-                        <h3 className="verify-section-title">
-                            <ShieldCheck size={18} />
-                            Verification Decision *
-                        </h3>
-                        <div className="verification-status-grid">
-                            {verificationStatuses.map(vs => {
-                                const Icon = vs.icon
-                                return (
-                                    <button
-                                        key={vs.value}
-                                        type="button"
-                                        className={`vs-card ${formData.verificationStatus === vs.value ? 'selected' : ''}`}
-                                        style={{ '--vs-color': vs.color }}
-                                        onClick={() => setFormData(prev => ({ ...prev, verificationStatus: vs.value }))}
-                                    >
-                                        <Icon size={22} />
-                                        <span className="vs-label">{vs.label}</span>
-                                        <span className="vs-desc">{vs.desc}</span>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Section 2 — On-site Inspection */}
-                    <div className="verify-section">
-                        <h3 className="verify-section-title">
-                            <Eye size={18} />
-                            On-Site Inspection
-                        </h3>
-
-                        <label className="checkbox-wrapper">
-                            <input
-                                type="checkbox"
-                                name="onSiteInspection"
-                                checked={formData.onSiteInspection}
-                                onChange={handleChange}
-                            />
-                            <span className="checkbox-custom" />
-                            <span className="checkbox-label">On-site inspection was conducted</span>
-                        </label>
-
+                {/* Verification Form (Form 4) */}
+                <form onSubmit={handleSubmit}>
+                    <div className="card" style={{ marginBottom: '1.5rem' }}>
                         <div className="form-group">
-                            <label className="form-label">Inspection Notes</label>
-                            <textarea
-                                name="inspectionNotes"
-                                className="form-textarea"
-                                placeholder="Document your observations from the site visit, current conditions, any dangers noted, evidence collected..."
-                                value={formData.inspectionNotes}
-                                onChange={handleChange}
-                                rows={4}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Section 3 — Severity & Type Confirmation */}
-                    <div className="verify-section">
-                        <h3 className="verify-section-title">
-                            <AlertTriangle size={18} />
-                            Confirm Severity & Type *
-                        </h3>
-
-                        <div className="form-row-2">
-                            <div className="form-group">
-                                <label className="form-label">Confirmed Severity *</label>
-                                <div className="severity-selector">
-                                    {['low', 'medium', 'high', 'critical'].map(sev => (
-                                        <button
-                                            key={sev}
-                                            type="button"
-                                            className={`severity-btn severity-${sev} ${formData.confirmedSeverity === sev ? 'selected' : ''}`}
-                                            onClick={() => setFormData(prev => ({ ...prev, confirmedSeverity: sev }))}
-                                        >
-                                            {sev}
-                                        </button>
-                                    ))}
-                                </div>
+                            <label className="form-label">Verification Decision</label>
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                {[
+                                    { val: 'valid', label: 'Valid', icon: <CheckCircle size={18} />, color: '#10b981' },
+                                    { val: 'false', label: 'False', icon: <XCircle size={18} />, color: '#ef4444' },
+                                    { val: 'duplicate', label: 'Duplicate', icon: <AlertTriangle size={18} />, color: '#f59e0b' }
+                                ].map(opt => (
+                                    <button key={opt.val} type="button"
+                                        onClick={() => setVerificationStatus(opt.val)}
+                                        className="card"
+                                        style={{ flex: 1, textAlign: 'center', cursor: 'pointer', padding: '1rem', borderColor: verificationStatus === opt.val ? opt.color : 'var(--border-color)', background: verificationStatus === opt.val ? `${opt.color}15` : 'transparent' }}>
+                                        <div style={{ color: opt.color, marginBottom: '0.25rem', display: 'flex', justifyContent: 'center' }}>{opt.icon}</div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{opt.label}</div>
+                                    </button>
+                                ))}
                             </div>
+                        </div>
 
+                        {verificationStatus === 'valid' && (
                             <div className="form-group">
-                                <label className="form-label">Confirmed Type</label>
-                                <select
-                                    name="confirmedType"
-                                    className="form-select"
-                                    value={formData.confirmedType}
-                                    onChange={handleChange}
-                                >
-                                    <option value="">— Keep Original —</option>
-                                    {incidentTypeOptions.map(t => (
-                                        <option key={t.value} value={t.value}>{t.label}</option>
-                                    ))}
+                                <label className="form-label">Severity Override</label>
+                                <select className="form-select" value={severityOverride} onChange={e => setSeverityOverride(e.target.value)}>
+                                    <option value="critical">Critical</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
                                 </select>
                             </div>
-                        </div>
-                    </div>
+                        )}
 
-                    {/* Section 4 — Resource & Cost Estimation */}
-                    <div className="verify-section">
-                        <h3 className="verify-section-title">
-                            <DollarSign size={18} />
-                            Resource & Cost Estimation
-                        </h3>
-
-                        <div className="form-row-3">
-                            <div className="form-group">
-                                <label className="form-label">
-                                    <DollarSign size={14} />
-                                    Estimated Cost (₹)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="estimatedCost"
-                                    className="form-input"
-                                    placeholder="e.g., 50000"
-                                    value={formData.estimatedCost}
-                                    onChange={handleChange}
-                                    min="0"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">
-                                    <Calendar size={14} />
-                                    Est. Resolution (Days)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="estimatedResolutionDays"
-                                    className="form-input"
-                                    placeholder="e.g., 7"
-                                    value={formData.estimatedResolutionDays}
-                                    onChange={handleChange}
-                                    min="0"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">
-                                    <Wrench size={14} />
-                                    Resources Required
-                                </label>
-                                <input
-                                    type="text"
-                                    name="resourcesRequired"
-                                    className="form-input"
-                                    placeholder="e.g., 2 workers, JCB machine"
-                                    value={formData.resourcesRequired}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section 5 — Recommended Action */}
-                    <div className="verify-section">
-                        <h3 className="verify-section-title">
-                            <Wrench size={18} />
-                            Recommended Action
-                        </h3>
-
-                        <div className="action-grid">
-                            {actionOptions.map(act => (
-                                <button
-                                    key={act.value}
-                                    type="button"
-                                    className={`action-card ${formData.actionRecommended === act.value ? 'selected' : ''}`}
-                                    style={{ '--action-color': act.color }}
-                                    onClick={() => setFormData(prev => ({ ...prev, actionRecommended: act.value }))}
-                                >
-                                    <span className="action-dot" />
-                                    <div>
-                                        <span className="action-label">{act.label}</span>
-                                        <span className="action-desc">{act.desc}</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Section 6 — Verification Comment */}
-                    <div className="verify-section">
                         <div className="form-group">
-                            <label className="form-label">Verification Comment / Notes</label>
-                            <textarea
-                                name="comment"
-                                className="form-textarea"
-                                placeholder="Add any additional notes, instructions for the response team, or observations..."
-                                value={formData.comment}
-                                onChange={handleChange}
-                                rows={3}
-                            />
+                            <label className="form-label">Notes</label>
+                            <textarea className="form-textarea" placeholder="Add verification notes..." value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="verify-actions">
-                        <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
-                            {submitting ? (
-                                <><Loader size={18} className="spinning" /> Submitting...</>
-                            ) : (
-                                <><Send size={18} /> Submit Verification</>
-                            )}
-                        </button>
-                    </div>
+                    <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={submitting}>
+                        {submitting ? 'Processing...' : <><Shield size={18} /> Submit Verification</>}
+                    </button>
                 </form>
             </div>
         </div>
     )
 }
-
-export default VerifyIncident

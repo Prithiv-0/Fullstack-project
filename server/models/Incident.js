@@ -1,6 +1,23 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+const INCIDENT_TYPES = [
+    'pothole', 'traffic', 'flooding', 'streetlight',
+    'garbage', 'accident', 'water_leak', 'road_damage',
+    'safety_issue', 'noise', 'illegal_parking', 'sewage', 'other'
+];
 
 const IncidentSchema = new mongoose.Schema({
+    incidentId: {
+        type: String,
+        default: () => crypto.randomUUID(),
+        unique: true
+    },
+    type: {
+        type: String,
+        required: [true, 'Please specify incident type'],
+        enum: INCIDENT_TYPES
+    },
     title: {
         type: String,
         required: [true, 'Please add an incident title'],
@@ -9,135 +26,49 @@ const IncidentSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: [true, 'Please add a description'],
         maxlength: [2000, 'Description cannot exceed 2000 characters']
     },
-    type: {
-        type: String,
-        required: [true, 'Please specify incident type'],
-        enum: [
-            'pothole',
-            'traffic',
-            'flooding',
-            'streetlight',
-            'garbage',
-            'accident',
-            'water-leak',
-            'road-damage',
-            'public-safety',
-            'noise',
-            'illegal-parking',
-            'sewage',
-            'other'
-        ]
+    location: {
+        lat: { type: Number, required: [true, 'Latitude is required'] },
+        lng: { type: Number, required: [true, 'Longitude is required'] },
+        address: String,
+        area: String,
+        zone: String
     },
     severity: {
         type: String,
-        enum: ['low', 'medium', 'high', 'critical'],
+        enum: ['critical', 'high', 'medium', 'low'],
         default: 'medium'
-    },
-    priority: {
-        type: Number,
-        min: 1,
-        max: 10,
-        default: 5
     },
     status: {
         type: String,
-        enum: ['reported', 'acknowledged', 'in-progress', 'resolved', 'closed', 'rejected'],
+        enum: ['reported', 'acknowledged', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected'],
         default: 'reported'
-    },
-    location: {
-        type: {
-            type: String,
-            enum: ['Point'],
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number],
-            required: [true, 'Please provide location coordinates'],
-            index: '2dsphere'
-        },
-        address: {
-            type: String,
-            required: [true, 'Please provide address']
-        },
-        area: String,
-        city: {
-            type: String,
-            default: 'Bengaluru'
-        }
     },
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    assignedDepartment: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department'
+    mediaUrls: [String],
+    isVerified: {
+        type: Boolean,
+        default: false
     },
-    assignedOfficer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+    isFalse: {
+        type: Boolean,
+        default: false
     },
-    media: [{
-        url: String,
-        type: {
-            type: String,
-            enum: ['image', 'video']
-        }
-    }],
-    aiClassification: {
-        detectedType: String,
-        confidence: Number,
-        suggestedSeverity: String,
-        keywords: [String]
+    source: {
+        type: String,
+        enum: ['citizen_app', 'social_media', 'iot_sensor', 'traffic_api', 'manual'],
+        default: 'citizen_app'
     },
-    verification: {
-        isVerified: {
-            type: Boolean,
-            default: false
-        },
-        verifiedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        verifiedAt: Date,
-        onSiteInspection: {
-            type: Boolean,
-            default: false
-        },
-        inspectionNotes: String,
-        confirmedSeverity: {
-            type: String,
-            enum: ['low', 'medium', 'high', 'critical']
-        },
-        confirmedType: {
-            type: String,
-            enum: [
-                'pothole', 'traffic', 'flooding', 'streetlight', 'garbage',
-                'accident', 'water-leak', 'road-damage', 'public-safety',
-                'noise', 'illegal-parking', 'sewage', 'other'
-            ]
-        },
-        estimatedCost: Number,
-        estimatedResolutionDays: Number,
-        resourcesRequired: String,
-        actionRecommended: {
-            type: String,
-            enum: ['immediate', 'scheduled', 'monitoring', 'no-action', 'escalate']
-        },
-        verificationStatus: {
-            type: String,
-            enum: ['pending', 'verified-valid', 'verified-invalid', 'duplicate', 'needs-more-info'],
-            default: 'pending'
-        },
-        duplicateOf: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Incident'
-        }
+    aiProcessed: {
+        type: Boolean,
+        default: false
     },
+    // Keep timeline for status history tracking
     timeline: [{
         status: String,
         comment: String,
@@ -150,16 +81,6 @@ const IncidentSchema = new mongoose.Schema({
             default: Date.now
         }
     }],
-    responseTime: Number, // in minutes
-    resolutionTime: Number, // in minutes
-    feedback: {
-        rating: {
-            type: Number,
-            min: 1,
-            max: 5
-        },
-        comment: String
-    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -167,8 +88,7 @@ const IncidentSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    },
-    resolvedAt: Date
+    }
 });
 
 // Update the updatedAt field on save
@@ -177,11 +97,13 @@ IncidentSchema.pre('save', function (next) {
     next();
 });
 
-// Index for geospatial queries
-IncidentSchema.index({ 'location.coordinates': '2dsphere' });
-
-// Index for common queries
-IncidentSchema.index({ status: 1, severity: 1, type: 1 });
+// Indexes per spec
+IncidentSchema.index({ 'location.zone': 1 });
+IncidentSchema.index({ status: 1 });
+IncidentSchema.index({ type: 1 });
+IncidentSchema.index({ severity: 1 });
+IncidentSchema.index({ reportedBy: 1 });
 IncidentSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Incident', IncidentSchema);
+module.exports.INCIDENT_TYPES = INCIDENT_TYPES;

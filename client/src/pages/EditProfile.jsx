@@ -1,170 +1,66 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
-import {
-    ArrowLeft,
-    User,
-    Mail,
-    Phone,
-    Save,
-    Loader,
-    CheckCircle,
-    AlertCircle,
-    Shield
-} from 'lucide-react'
+import { User, Save, ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import './EditProfile.css'
 
-function EditProfile() {
+export default function EditProfile() {
     const { user, updateUser } = useAuth()
-    const navigate = useNavigate()
-
-    const [formData, setFormData] = useState({
-        name: user?.name || '',
-        email: user?.email || '',
-        phone: user?.phone || ''
-    })
+    const nav = useNavigate()
+    const [form, setForm] = useState({ name: user?.name || '', phone: user?.phone || '', zone: user?.zone || '' })
     const [loading, setLoading] = useState(false)
-    const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
-        setError('')
-        setSuccess(false)
-    }
+    const [success, setSuccess] = useState('')
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
-        if (!formData.name.trim()) {
-            setError('Name is required')
-            return
-        }
-
-        if (!formData.email.trim()) {
-            setError('Email is required')
-            return
-        }
-
-        setLoading(true)
-        setError('')
-
+        setLoading(true); setError(''); setSuccess('')
         try {
-            const res = await api.put('/auth/updateprofile', formData)
+            const res = await api.put('/auth/profile', form)
             updateUser(res.data.data)
-            setSuccess(true)
-            setTimeout(() => setSuccess(false), 3000)
+            setSuccess('Profile updated successfully!')
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to update profile')
-        } finally {
-            setLoading(false)
+            setError(err.response?.data?.error || 'Update failed')
         }
+        setLoading(false)
     }
 
     return (
         <div className="page-container fade-in">
-            <button className="back-button" onClick={() => navigate(-1)}>
-                <ArrowLeft size={18} />
-                Back
-            </button>
+            <button onClick={() => nav(-1)} className="btn btn-sm btn-secondary" style={{ marginBottom: '1rem' }}><ArrowLeft size={16} /> Back</button>
 
-            <div className="profile-page">
-                <div className="profile-header-section">
-                    <div className="profile-avatar">
-                        <User size={48} />
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+                        <User size={28} color="white" />
                     </div>
-                    <div>
-                        <h1 className="page-title">Edit Profile</h1>
-                        <p className="page-subtitle">Update your personal information</p>
-                    </div>
+                    <h1 className="page-title">Edit Profile</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>{user?.email} • <span className="badge badge-status">{user?.role?.replace(/_/g, ' ')}</span></p>
                 </div>
 
-                <div className="profile-info-bar">
-                    <div className="info-chip">
-                        <Shield size={14} />
-                        <span>Role: <strong>{user?.role}</strong></span>
-                    </div>
-                    <div className="info-chip">
-                        <Mail size={14} />
-                        <span>{user?.email}</span>
-                    </div>
-                </div>
+                {error && <div className="alert alert-danger">{error}</div>}
+                {success && <div className="alert alert-success">{success}</div>}
 
-                <form onSubmit={handleSubmit} className="profile-form">
-                    {error && (
-                        <div className="alert alert-danger">
-                            <AlertCircle size={18} />
-                            {error}
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="alert alert-success">
-                            <CheckCircle size={18} />
-                            Profile updated successfully!
-                        </div>
-                    )}
-
-                    <div className="form-section">
+                <form onSubmit={handleSubmit}>
+                    <div className="card">
                         <div className="form-group">
-                            <label className="form-label">Full Name *</label>
-                            <div className="input-wrapper">
-                                <User className="input-icon" size={18} />
-                                <input
-                                    type="text"
-                                    name="name"
-                                    className="form-input with-icon"
-                                    placeholder="Enter your full name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
+                            <label className="form-label">Name</label>
+                            <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                         </div>
-
                         <div className="form-group">
-                            <label className="form-label">Email Address *</label>
-                            <div className="input-wrapper">
-                                <Mail className="input-icon" size={18} />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    className="form-input with-icon"
-                                    placeholder="you@example.com"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
+                            <label className="form-label">Phone</label>
+                            <input className="form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="9876543210" />
                         </div>
-
                         <div className="form-group">
-                            <label className="form-label">Phone Number</label>
-                            <div className="input-wrapper">
-                                <Phone className="input-icon" size={18} />
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    className="form-input with-icon"
-                                    placeholder="Your phone number"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                            <label className="form-label">Zone</label>
+                            <select className="form-select" value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })}>
+                                <option value="">Select zone</option>
+                                {['Central', 'North', 'South', 'East', 'West', 'Mahadevapura', 'Bommanahalli', 'Dasarahalli', 'Yelahanka', 'Rajarajeshwari Nagar'].map(z => <option key={z} value={z}>{z}</option>)}
+                            </select>
                         </div>
-                    </div>
-
-                    <div className="form-actions">
-                        <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                            {loading ? (
-                                <><Loader size={18} className="spinning" /> Saving...</>
-                            ) : (
-                                <><Save size={18} /> Save Changes</>
-                            )}
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+                            {loading ? 'Saving...' : <><Save size={18} /> Save Changes</>}
                         </button>
                     </div>
                 </form>
@@ -172,5 +68,3 @@ function EditProfile() {
         </div>
     )
 }
-
-export default EditProfile

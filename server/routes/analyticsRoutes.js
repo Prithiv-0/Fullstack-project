@@ -2,239 +2,166 @@ const express = require('express');
 const router = express.Router();
 const Incident = require('../models/Incident');
 const Department = require('../models/Department');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const Assignment = require('../models/Assignment');
+const ResolutionLog = require('../models/ResolutionLog');
+const { authenticate, authorize } = require('../middleware/authMiddleware');
 
-// @route   GET /api/analytics/overview
-// @desc    Get overall city analytics
-// @access  Private (Official/Admin)
-router.get('/overview', protect, authorize('official', 'admin'), async (req, res) => {
+// @route   GET /api/v1/analytics/dashboard
+router.get('/dashboard', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
-        const totalIncidents = await Incident.countDocuments();
-        const activeIncidents = await Incident.countDocuments({
-            status: { $in: ['reported', 'acknowledged', 'in-progress'] }
-        });
-        const resolvedToday = await Incident.countDocuments({
-            resolvedAt: { $gte: new Date().setHours(0, 0, 0, 0) }
+        const [totalIncidents, activeIncidents, resolvedToday, criticalActive, pendingAction] = await Promise.all([
+            Incident.countDocuments(),
+            Incident.countDocuments({ status: { $in: ['reported', 'acknowledged', 'assigned', 'in_progress'] } }),
+            Incident.countDocuments({ status: 'resolved', updatedAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } }),
+            Incident.countDocuments({ severity: 'critical', status: { $nin: ['resolved', 'closed', 'rejected'] } }),
+            Incident.countDocuments({ status: { $in: ['reported', 'acknowledged'] } })
+        ]);
+
+        const avgResponse = await ResolutionLog.aggregate([
+            { $match: { ttr: { $exists: true, $ne: null } } },
+            { $group: { _id: null, avg: { $avg: '$ttr' } } }
+        ]);
+
+        const slaBreachCount = await Assignment.countDocuments({
+            status: { $in: ['pending', 'acknowledged', 'in_progress'] },
+            slaDueBy: { $lt: new Date() }
         });
 
-        const byType = await Incident.aggregate([
+        res.json({
+            success: true,
+            data: {
+                totalIncidents, activeIncidents, resolvedToday, criticalActive,
+                pendingAction,
+                avgResponseTimeHours: avgResponse[0] ? +(avgResponse[0].avg / 60).toFixed(1) : 0,
+                slaBreachCount
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// @route   GET /api/v1/analytics/incidents-by-type
+router.get('/incidents-by-type', authenticate, authorize('admin', 'government_official'), async (req, res) => {
+    try {
+        const data = await Incident.aggregate([
             { $group: { _id: '$type', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
 
-        const bySeverity = await Incident.aggregate([
+// @route   GET /api/v1/analytics/severity-distribution
+router.get('/severity-distribution', authenticate, authorize('admin', 'government_official'), async (req, res) => {
+    try {
+        const data = await Incident.aggregate([
             { $group: { _id: '$severity', count: { $sum: 1 } } }
         ]);
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
 
-        const byStatus = await Incident.aggregate([
+// @route   GET /api/v1/analytics/status-distribution
+router.get('/status-distribution', authenticate, authorize('admin', 'government_official'), async (req, res) => {
+    try {
+        const data = await Incident.aggregate([
             { $group: { _id: '$status', count: { $sum: 1 } } }
         ]);
-
-        const criticalIncidents = await Incident.find({ severity: 'critical', status: { $ne: 'resolved' } })
-            .populate('assignedDepartment', 'name')
-            .sort({ createdAt: -1 })
-            .limit(5);
-
-        res.json({
-            success: true,
-            data: {
-                totalIncidents,
-                activeIncidents,
-                resolvedToday,
-                byType,
-                bySeverity,
-                byStatus,
-                criticalIncidents
-            }
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
-// @route   GET /api/analytics/trends
-// @desc    Get incident trends over time
-// @access  Private (Official/Admin)
-router.get('/trends', protect, authorize('official', 'admin'), async (req, res) => {
+// @route   GET /api/v1/analytics/response-times
+router.get('/response-times', authenticate, authorize('admin'), async (req, res) => {
     try {
-        const days = parseInt(req.query.days) || 30;
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
-
-        const dailyTrends = await Incident.aggregate([
-            { $match: { createdAt: { $gte: startDate } } },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: '$createdAt' },
-                        month: { $month: '$createdAt' },
-                        day: { $dayOfMonth: '$createdAt' }
-                    },
-                    count: { $sum: 1 },
-                    resolved: {
-                        $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-                    }
-                }
-            },
-            { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+        const data = await ResolutionLog.aggregate([
+            { $lookup: { from: 'incidents', localField: 'incidentId', foreignField: '_id', as: 'incident' } },
+            { $unwind: '$incident' },
+            { $lookup: { from: 'assignments', localField: 'incidentId', foreignField: 'incidentId', as: 'assignment' } },
+            { $unwind: { path: '$assignment', preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: 'departments', localField: 'assignment.departmentId', foreignField: '_id', as: 'dept' } },
+            { $unwind: { path: '$dept', preserveNullAndEmptyArrays: true } },
+            { $group: { _id: '$dept.name', avgTTA: { $avg: '$tta' }, avgTTR: { $avg: '$ttr' }, count: { $sum: 1 } } }
         ]);
-
-        const typeTrends = await Incident.aggregate([
-            { $match: { createdAt: { $gte: startDate } } },
-            {
-                $group: {
-                    _id: {
-                        type: '$type',
-                        week: { $week: '$createdAt' }
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { '_id.week': 1 } }
-        ]);
-
-        res.json({
-            success: true,
-            data: {
-                daily: dailyTrends,
-                byType: typeTrends
-            }
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
-// @route   GET /api/analytics/hotspots
-// @desc    Get incident hotspots (areas with high concentration)
-// @access  Private (Official/Admin)
-router.get('/hotspots', protect, authorize('official', 'admin'), async (req, res) => {
+// @route   GET /api/v1/analytics/dept-performance
+router.get('/dept-performance', authenticate, authorize('admin'), async (req, res) => {
     try {
-        const hotspots = await Incident.aggregate([
-            {
-                $group: {
-                    _id: '$location.area',
-                    count: { $sum: 1 },
-                    types: { $push: '$type' },
-                    avgSeverity: {
-                        $avg: {
-                            $switch: {
-                                branches: [
-                                    { case: { $eq: ['$severity', 'low'] }, then: 1 },
-                                    { case: { $eq: ['$severity', 'medium'] }, then: 2 },
-                                    { case: { $eq: ['$severity', 'high'] }, then: 3 },
-                                    { case: { $eq: ['$severity', 'critical'] }, then: 4 }
-                                ],
-                                default: 2
-                            }
-                        }
-                    },
-                    location: { $first: '$location.coordinates' }
-                }
-            },
-            { $match: { count: { $gte: 3 } } },
-            { $sort: { count: -1 } },
-            { $limit: 20 }
-        ]);
-
-        res.json({ success: true, data: hotspots });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
-});
-
-// @route   GET /api/analytics/department-performance
-// @desc    Get department performance metrics
-// @access  Private (Admin)
-router.get('/department-performance', protect, authorize('admin'), async (req, res) => {
-    try {
-        const performance = await Incident.aggregate([
-            { $match: { assignedDepartment: { $exists: true } } },
-            {
-                $group: {
-                    _id: '$assignedDepartment',
-                    total: { $sum: 1 },
-                    resolved: {
-                        $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-                    },
-                    avgResponseTime: { $avg: '$responseTime' },
-                    avgResolutionTime: { $avg: '$resolutionTime' },
-                    avgRating: { $avg: '$feedback.rating' }
-                }
-            },
-            {
-                $lookup: {
-                    from: 'departments',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'department'
-                }
-            },
-            { $unwind: '$department' },
-            {
-                $project: {
-                    name: '$department.name',
-                    code: '$department.code',
-                    total: 1,
-                    resolved: 1,
-                    resolutionRate: { $multiply: [{ $divide: ['$resolved', '$total'] }, 100] },
-                    avgResponseTime: 1,
-                    avgResolutionTime: 1,
-                    avgRating: 1
-                }
-            },
+        const performance = await Assignment.aggregate([
+            { $group: { _id: '$departmentId', total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } }, escalated: { $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] } } } },
+            { $lookup: { from: 'departments', localField: '_id', foreignField: '_id', as: 'dept' } },
+            { $unwind: '$dept' },
+            { $project: { name: '$dept.name', shortName: '$dept.shortName', total: 1, completed: 1, escalated: 1, resolutionRate: { $cond: [{ $gt: ['$total', 0] }, { $multiply: [{ $divide: ['$completed', '$total'] }, 100] }, 0] } } },
             { $sort: { resolutionRate: -1 } }
         ]);
-
         res.json({ success: true, data: performance });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
-// @route   GET /api/analytics/predictions
-// @desc    Get AI predictions for future hotspots (mock)
-// @access  Private (Admin)
-router.get('/predictions', protect, authorize('admin'), async (req, res) => {
+// @route   GET /api/v1/analytics/critical-feed
+router.get('/critical-feed', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
-        // This would typically use ML models - for now returning mock predictions
-        const historicalHotspots = await Incident.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        area: '$location.area',
-                        type: '$type'
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { count: -1 } },
-            { $limit: 10 }
+        const incidents = await Incident.find({
+            severity: { $in: ['critical', 'high'] },
+            status: { $nin: ['resolved', 'closed'] }
+        }).sort({ createdAt: -1 }).limit(10).lean();
+        res.json({ success: true, data: incidents });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
+
+// Backward-compat endpoints
+router.get('/overview', authenticate, authorize('government_official', 'admin'), async (req, res) => {
+    try {
+        const totalIncidents = await Incident.countDocuments();
+        const activeIncidents = await Incident.countDocuments({ status: { $in: ['reported', 'acknowledged', 'assigned', 'in_progress'] } });
+        const resolvedToday = await Incident.countDocuments({ status: 'resolved', updatedAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } });
+        const byType = await Incident.aggregate([{ $group: { _id: '$type', count: { $sum: 1 } } }, { $sort: { count: -1 } }]);
+        const bySeverity = await Incident.aggregate([{ $group: { _id: '$severity', count: { $sum: 1 } } }]);
+        const byStatus = await Incident.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
+        const criticalIncidents = await Incident.find({ severity: 'critical', status: { $ne: 'resolved' } }).sort({ createdAt: -1 }).limit(5).lean();
+        res.json({ success: true, data: { totalIncidents, activeIncidents, resolvedToday, byType, bySeverity, byStatus, criticalIncidents } });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
+
+router.get('/trends', authenticate, authorize('government_official', 'admin'), async (req, res) => {
+    try {
+        const days = parseInt(req.query.days) || 30;
+        const startDate = new Date(Date.now() - days * 86400000);
+        const daily = await Incident.aggregate([
+            { $match: { createdAt: { $gte: startDate } } },
+            { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 }, resolved: { $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] } } } },
+            { $sort: { _id: 1 } }
         ]);
+        res.json({ success: true, data: { daily } });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
 
-        // Mock prediction logic
-        const predictions = historicalHotspots.map(h => ({
-            area: h._id.area,
-            type: h._id.type,
-            predictedIncidents: Math.round(h.count * 1.1), // Simple projection
-            confidence: 0.7 + Math.random() * 0.25,
-            period: 'next 7 days'
-        }));
+router.get('/hotspots', authenticate, authorize('government_official', 'admin'), async (req, res) => {
+    try {
+        const hotspots = await Incident.aggregate([
+            { $group: { _id: '$location.area', count: { $sum: 1 }, lat: { $avg: '$location.lat' }, lng: { $avg: '$location.lng' } } },
+            { $match: { count: { $gte: 2 } } },
+            { $sort: { count: -1 } }, { $limit: 20 }
+        ]);
+        res.json({ success: true, data: hotspots });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
+});
 
-        res.json({ success: true, data: predictions });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
+router.get('/department-performance', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const data = await Assignment.aggregate([
+            { $group: { _id: '$departmentId', total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } } } },
+            { $lookup: { from: 'departments', localField: '_id', foreignField: '_id', as: 'dept' } },
+            { $unwind: '$dept' },
+            { $project: { name: '$dept.name', total: 1, completed: 1, resolutionRate: { $cond: [{ $gt: ['$total', 0] }, { $multiply: [{ $divide: ['$completed', '$total'] }, 100] }, 0] } } }
+        ]);
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
 module.exports = router;

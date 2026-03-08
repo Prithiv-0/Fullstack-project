@@ -1,253 +1,160 @@
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
-import {
-    BarChart3,
-    TrendingUp,
-    MapPin,
-    Loader,
-    AlertTriangle,
-    CheckCircle,
-    Clock,
-    Building2,
-    PieChart
-} from 'lucide-react'
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    PieChart as RechartsPie,
-    Pie,
-    Cell,
-    Legend
-} from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts'
+import { TrendingUp, BarChart3, Activity, RefreshCcw } from 'lucide-react'
 import './Analytics.css'
 
-const COLORS = ['#03a9f4', '#00bcd4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
-const SEVERITY_COLORS = {
-    critical: '#dc2626',
-    high: '#f97316',
-    medium: '#eab308',
-    low: '#22c55e'
-}
+const COLORS = ['#03a9f4', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#f97316', '#06b6d4', '#a855f7', '#64748b', '#eab308', '#22c55e', '#dc2626']
+const SEV_COLORS = { critical: '#dc2626', high: '#f97316', medium: '#eab308', low: '#22c55e' }
 
-function Analytics() {
-    const [data, setData] = useState(null)
+export default function Analytics() {
+    const [dashboard, setDashboard] = useState(null)
+    const [byType, setByType] = useState([])
+    const [bySeverity, setBySeverity] = useState([])
+    const [byStatus, setByStatus] = useState([])
+    const [trends, setTrends] = useState([])
+    const [deptPerf, setDeptPerf] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        fetchAnalytics()
-    }, [])
+    useEffect(() => { fetchAll() }, [])
 
-    const fetchAnalytics = async () => {
+    const fetchAll = async () => {
+        setLoading(true)
         try {
-            const res = await api.get('/analytics/overview')
-            setData(res.data.data)
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
+            const [dashRes, typeRes, sevRes, statRes, trendRes, deptRes] = await Promise.all([
+                api.get('/analytics/dashboard').catch(() => ({ data: { data: {} } })),
+                api.get('/analytics/incidents-by-type').catch(() => ({ data: { data: [] } })),
+                api.get('/analytics/severity-distribution').catch(() => ({ data: { data: [] } })),
+                api.get('/analytics/status-distribution').catch(() => ({ data: { data: [] } })),
+                api.get('/analytics/trends').catch(() => ({ data: { data: { daily: [] } } })),
+                api.get('/analytics/dept-performance').catch(() => ({ data: { data: [] } }))
+            ])
+            setDashboard(dashRes.data.data)
+            setByType((typeRes.data.data || []).map(d => ({ name: d._id?.replace(/_/g, ' '), value: d.count })))
+            setBySeverity((sevRes.data.data || []).map(d => ({ name: d._id, value: d.count })))
+            setByStatus((statRes.data.data || []).map(d => ({ name: d._id?.replace(/_/g, ' '), value: d.count })))
+            setTrends((trendRes.data.data?.daily || trendRes.data.data || []).map(d => ({ date: d._id, count: d.count, resolved: d.resolved || 0 })))
+            setDeptPerf(deptRes.data.data || [])
+        } catch (err) { console.error(err) }
+        setLoading(false)
     }
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <Loader className="loading-spinner" />
-                <p>Loading analytics...</p>
-            </div>
-        )
-    }
-
-    // Transform data for charts
-    const typeData = data?.byType?.map(item => ({
-        name: item._id?.charAt(0).toUpperCase() + item._id?.slice(1).replace('-', ' ') || 'Unknown',
-        value: item.count
-    })) || []
-
-    const severityData = data?.bySeverity?.map(item => ({
-        name: item._id?.charAt(0).toUpperCase() + item._id?.slice(1) || 'Unknown',
-        value: item.count,
-        color: SEVERITY_COLORS[item._id] || '#6b7280'
-    })) || []
-
-    const statusData = data?.byStatus?.map(item => ({
-        name: item._id?.charAt(0).toUpperCase() + item._id?.slice(1).replace('-', ' ') || 'Unknown',
-        value: item.count
-    })) || []
+    if (loading) return <div className="loading-container"><div className="loading-spinner" /><p>Loading analytics...</p></div>
 
     return (
         <div className="page-container fade-in">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Analytics Dashboard</h1>
-                    <p className="page-subtitle">City-wide incident analysis and insights</p>
+                    <h1 className="page-title"><TrendingUp size={28} style={{ display: 'inline', verticalAlign: 'middle' }} /> Analytics Dashboard</h1>
+                    <p className="page-subtitle">City intelligence insights and performance metrics</p>
                 </div>
+                <button className="btn btn-secondary" onClick={fetchAll}><RefreshCcw size={16} /> Refresh</button>
             </div>
 
-            {/* Stats Overview */}
-            <div className="analytics-stats">
-                <div className="analytics-stat">
-                    <div className="stat-icon-wrapper blue">
-                        <BarChart3 size={24} />
-                    </div>
-                    <div>
-                        <span className="stat-number">{data?.totalIncidents || 0}</span>
-                        <span className="stat-label">Total Incidents</span>
-                    </div>
-                </div>
-                <div className="analytics-stat">
-                    <div className="stat-icon-wrapper orange">
-                        <Clock size={24} />
-                    </div>
-                    <div>
-                        <span className="stat-number">{data?.activeIncidents || 0}</span>
-                        <span className="stat-label">Active Incidents</span>
-                    </div>
-                </div>
-                <div className="analytics-stat">
-                    <div className="stat-icon-wrapper green">
-                        <CheckCircle size={24} />
-                    </div>
-                    <div>
-                        <span className="stat-number">{data?.resolvedToday || 0}</span>
-                        <span className="stat-label">Resolved Today</span>
-                    </div>
-                </div>
-                <div className="analytics-stat">
-                    <div className="stat-icon-wrapper red">
-                        <AlertTriangle size={24} />
-                    </div>
-                    <div>
-                        <span className="stat-number">{data?.criticalIncidents?.length || 0}</span>
-                        <span className="stat-label">Critical Active</span>
-                    </div>
-                </div>
+            {/* KPI Row */}
+            <div className="stats-grid" style={{ marginBottom: '2rem' }}>
+                <div className="stat-card"><div className="stat-value">{dashboard?.totalIncidents || 0}</div><div className="stat-label">Total Incidents</div></div>
+                <div className="stat-card"><div className="stat-value">{dashboard?.activeIncidents || 0}</div><div className="stat-label">Active</div></div>
+                <div className="stat-card"><div className="stat-value">{dashboard?.resolvedToday || 0}</div><div className="stat-label">Resolved Today</div></div>
+                <div className="stat-card"><div className="stat-value">{dashboard?.avgResponseTimeHours || 0}h</div><div className="stat-label">Avg Response</div></div>
             </div>
 
             {/* Charts Grid */}
-            <div className="charts-grid">
-                {/* Incidents by Type - Bar Chart */}
-                <div className="chart-card">
-                    <h3 className="chart-title">
-                        <BarChart3 size={18} />
-                        Incidents by Type
-                    </h3>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={typeData} layout="vertical" margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis type="number" stroke="#6b7280" />
-                                <YAxis dataKey="name" type="category" stroke="#6b7280" width={100} tick={{ fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{
-                                        background: 'rgba(17, 24, 39, 0.95)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px'
-                                    }}
-                                />
-                                <Bar dataKey="value" fill="#03a9f4" radius={[0, 4, 4, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Incidents by Severity - Pie Chart */}
-                <div className="chart-card">
-                    <h3 className="chart-title">
-                        <PieChart size={18} />
-                        Severity Distribution
-                    </h3>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <RechartsPie>
-                                <Pie
-                                    data={severityData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    label={({ name, value }) => `${name}: ${value}`}
-                                >
-                                    {severityData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{
-                                        background: 'rgba(17, 24, 39, 0.95)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px'
-                                    }}
-                                />
+            <div className="grid-2" style={{ marginBottom: '2rem' }}>
+                {/* Trends */}
+                <div className="card">
+                    <h3 className="card-title" style={{ marginBottom: '1rem' }}><Activity size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Daily Trends (30 days)</h3>
+                    {trends.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={trends}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => v?.slice(5)} />
+                                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                                <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} />
+                                <Line type="monotone" dataKey="count" stroke="#03a9f4" strokeWidth={2} name="Reported" />
+                                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} name="Resolved" />
                                 <Legend />
-                            </RechartsPie>
+                            </LineChart>
                         </ResponsiveContainer>
-                    </div>
+                    ) : <div className="empty-state"><p>No trend data</p></div>}
                 </div>
 
-                {/* Status Distribution */}
-                <div className="chart-card">
-                    <h3 className="chart-title">
-                        <TrendingUp size={18} />
-                        Status Distribution
-                    </h3>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={statusData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />
-                                <YAxis stroke="#6b7280" />
-                                <Tooltip
-                                    contentStyle={{
-                                        background: 'rgba(17, 24, 39, 0.95)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px'
-                                    }}
-                                />
-                                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                    {statusData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
+                {/* By Type */}
+                <div className="card">
+                    <h3 className="card-title" style={{ marginBottom: '1rem' }}><BarChart3 size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Incidents by Type</h3>
+                    {byType.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={byType}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" height={60} />
+                                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                                <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} />
+                                <Bar dataKey="value" fill="#03a9f4" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
-                    </div>
+                    ) : <div className="empty-state"><p>No data</p></div>}
                 </div>
 
-                {/* Critical Incidents List */}
-                <div className="chart-card">
-                    <h3 className="chart-title">
-                        <AlertTriangle size={18} />
-                        Critical Incidents
-                    </h3>
-                    <div className="critical-list">
-                        {data?.criticalIncidents?.length > 0 ? (
-                            data.criticalIncidents.map((incident, i) => (
-                                <div key={i} className="critical-item">
-                                    <div className="critical-info">
-                                        <span className="critical-title">{incident.title}</span>
-                                        <span className="critical-dept">{incident.assignedDepartment?.name || 'Unassigned'}</span>
-                                    </div>
-                                    <span className="critical-status">{incident.status}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="no-critical">
-                                <CheckCircle size={32} />
-                                <p>No critical incidents</p>
-                            </div>
-                        )}
-                    </div>
+                {/* By Severity */}
+                <div className="card">
+                    <h3 className="card-title" style={{ marginBottom: '1rem' }}>Severity Distribution</h3>
+                    {bySeverity.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                                <Pie data={bySeverity} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, value }) => `${name}: ${value}`}>
+                                    {bySeverity.map((entry, i) => <Cell key={i} fill={SEV_COLORS[entry.name] || COLORS[i % COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : <div className="empty-state"><p>No data</p></div>}
                 </div>
+
+                {/* By Status */}
+                <div className="card">
+                    <h3 className="card-title" style={{ marginBottom: '1rem' }}>Status Distribution</h3>
+                    {byStatus.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                                <Pie data={byStatus} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, value }) => `${name}: ${value}`}>
+                                    {byStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : <div className="empty-state"><p>No data</p></div>}
+                </div>
+            </div>
+
+            {/* Department Performance */}
+            <div className="card">
+                <h3 className="card-title" style={{ marginBottom: '1rem' }}>Department Performance</h3>
+                {deptPerf.length > 0 ? (
+                    <div className="table-container">
+                        <table>
+                            <thead><tr><th>Department</th><th>Total</th><th>Completed</th><th>Escalated</th><th>Resolution Rate</th></tr></thead>
+                            <tbody>
+                                {deptPerf.map((d, i) => (
+                                    <tr key={i}>
+                                        <td style={{ fontWeight: 600 }}>{d.name}</td>
+                                        <td>{d.total}</td>
+                                        <td>{d.completed}</td>
+                                        <td style={{ color: d.escalated > 0 ? 'var(--danger)' : 'inherit' }}>{d.escalated || 0}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${d.resolutionRate || 0}%`, height: '100%', background: d.resolutionRate > 70 ? '#10b981' : d.resolutionRate > 40 ? '#f59e0b' : '#ef4444', borderRadius: 3 }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.85rem', minWidth: '40px' }}>{(d.resolutionRate || 0).toFixed(0)}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : <div className="empty-state"><p>No department data</p></div>}
             </div>
         </div>
     )
 }
-
-export default Analytics

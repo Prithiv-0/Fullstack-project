@@ -1,125 +1,172 @@
 /**
  * AI Service for Incident Classification
- * Uses rule-based NLP for classification and severity scoring
+ * Uses Gemini API when available, falls back to rule-based classification
  */
 
-// Keyword mappings for incident types
+// Keyword mappings for incident types (fallback)
 const typeKeywords = {
     pothole: ['pothole', 'hole', 'pit', 'crater', 'dip', 'road damage', 'broken road'],
-    traffic: ['traffic', 'congestion', 'jam', 'signal', 'blocked', 'slow moving', 'accident'],
+    traffic: ['traffic', 'congestion', 'jam', 'signal', 'blocked', 'slow moving'],
     flooding: ['flood', 'water logging', 'rain water', 'drainage', 'submerged', 'overflow'],
     streetlight: ['light', 'lamp', 'dark', 'no light', 'street light', 'pole', 'bulb'],
     garbage: ['garbage', 'trash', 'waste', 'dump', 'litter', 'debris', 'rubbish', 'dirty'],
     accident: ['accident', 'crash', 'collision', 'hit', 'injured', 'ambulance', 'emergency'],
-    'water-leak': ['water leak', 'pipe burst', 'water supply', 'leaking', 'broken pipe'],
-    'road-damage': ['road', 'broken', 'damaged', 'crack', 'asphalt', 'repair needed'],
-    'public-safety': ['safety', 'danger', 'hazard', 'risk', 'threat', 'police', 'crime'],
+    water_leak: ['water leak', 'pipe burst', 'water supply', 'leaking', 'broken pipe'],
+    road_damage: ['road', 'broken', 'damaged', 'crack', 'asphalt', 'repair needed'],
+    safety_issue: ['safety', 'danger', 'hazard', 'risk', 'threat', 'police', 'crime'],
     noise: ['noise', 'loud', 'sound', 'music', 'disturbance', 'construction'],
-    'illegal-parking': ['parking', 'parked', 'vehicle', 'blocking', 'obstruction'],
+    illegal_parking: ['parking', 'parked', 'vehicle', 'blocking', 'obstruction'],
     sewage: ['sewage', 'sewer', 'drain', 'smell', 'stink', 'manhole', 'overflow']
 };
 
-// Severity keywords
 const severityKeywords = {
-    critical: ['urgent', 'emergency', 'immediate', 'danger', 'critical', 'life threatening', 'injured', 'accident', 'fire'],
+    critical: ['urgent', 'emergency', 'immediate', 'danger', 'critical', 'life threatening', 'injured', 'fire'],
     high: ['severe', 'serious', 'major', 'large', 'widespread', 'blocked', 'hazardous'],
     medium: ['moderate', 'significant', 'noticeable', 'affecting'],
     low: ['minor', 'small', 'slight', 'occasional']
 };
 
-// High-risk areas (for severity boosting)
-const highRiskAreas = ['hospital', 'school', 'market', 'junction', 'highway', 'main road', 'bus stop'];
+const ROUTING_RULES = {
+    pothole: 'Public Works Department',
+    road_damage: 'Public Works Department',
+    traffic: 'Traffic Management Centre',
+    illegal_parking: 'Traffic Management Centre',
+    flooding: 'Stormwater Drainage Department',
+    sewage: 'Stormwater Drainage Department',
+    water_leak: 'Bangalore Water Supply Board',
+    streetlight: 'BESCOM Electrical Services',
+    garbage: 'Bruhat Bengaluru Mahanagara Palike',
+    accident: 'City Police',
+    safety_issue: 'City Police',
+    noise: 'City Police',
+    other: 'Bruhat Bengaluru Mahanagara Palike'
+};
 
 /**
- * Classify an incident based on its content
- * @param {Object} incident - {title, description, type}
- * @returns {Object} AI classification result
+ * Classify an incident — tries Gemini API first, falls back to rule-based
  */
-function classifyIncident(incident) {
+async function classifyIncident(incident) {
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    // Try Gemini API if key available
+    if (geminiKey && geminiKey !== 'your_gemini_api_key') {
+        try {
+            return await classifyWithGemini(incident, geminiKey);
+        } catch (err) {
+            console.error('Gemini API error, falling back to rules:', err.message);
+        }
+    }
+
+    // Fallback to rule-based classification
+    return classifyWithRules(incident);
+}
+
+/**
+ * Gemini API classification (Section 8.1)
+ */
+async function classifyWithGemini(incident, apiKey) {
+    const prompt = `You are a smart city incident classification AI.
+
+Incident Details:
+- Type: ${incident.type}
+- Title: ${incident.title}
+- Description: ${incident.description || ''}
+- Location: ${incident.location?.area || ''}, ${incident.location?.zone || ''}
+
+Please analyze and return ONLY a JSON object with these fields:
+{
+  "nlpCategory": string,
+  "priorityTag": "critical|high|medium|low",
+  "priorityScore": number (0-100),
+  "aiSummary": string,
+  "suggestedDepartment": string,
+  "classificationConfidence": number (0.0-1.0),
+  "sentimentScore": number (-1.0 to 1.0)
+}`;
+
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+        })
+    });
+
+    const data = await response.json();
+
+    if (!data.candidates || !data.candidates[0]) {
+        throw new Error('No response from Gemini');
+    }
+
+    const raw = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+    return {
+        nlpCategory: parsed.nlpCategory,
+        priorityTag: parsed.priorityTag,
+        priorityScore: parsed.priorityScore,
+        aiSummary: parsed.aiSummary,
+        suggestedDepartment: parsed.suggestedDepartment,
+        classificationConfidence: parsed.classificationConfidence,
+        sentimentScore: parsed.sentimentScore,
+        llmModel: 'gemini-pro',
+        rawResponse: data
+    };
+}
+
+/**
+ * Rule-based classification fallback
+ */
+function classifyWithRules(incident) {
     const { title, description, type } = incident;
     const text = `${title || ''} ${description || ''}`.toLowerCase();
 
-    // Extract keywords found
+    // Extract keywords
     const foundKeywords = [];
-    Object.entries(typeKeywords).forEach(([incType, keywords]) => {
-        keywords.forEach(kw => {
-            if (text.includes(kw)) {
-                foundKeywords.push(kw);
-            }
-        });
+    Object.entries(typeKeywords).forEach(([, keywords]) => {
+        keywords.forEach(kw => { if (text.includes(kw)) foundKeywords.push(kw); });
     });
 
-    // Determine suggested type if not provided
-    let detectedType = type;
-    if (!type || type === 'other') {
-        let maxMatch = 0;
-        Object.entries(typeKeywords).forEach(([incType, keywords]) => {
-            const matchCount = keywords.filter(kw => text.includes(kw)).length;
-            if (matchCount > maxMatch) {
-                maxMatch = matchCount;
-                detectedType = incType;
-            }
-        });
-    }
-
-    // Calculate severity
-    let suggestedSeverity = 'medium';
-    let severityScore = 5;
+    // Determine severity
+    let priorityTag = 'medium';
+    let priorityScore = 50;
 
     for (const [severity, keywords] of Object.entries(severityKeywords)) {
         if (keywords.some(kw => text.includes(kw))) {
-            suggestedSeverity = severity;
-            severityScore = severity === 'critical' ? 10 : severity === 'high' ? 8 : severity === 'medium' ? 5 : 3;
+            priorityTag = severity;
+            priorityScore = severity === 'critical' ? 90 : severity === 'high' ? 70 : severity === 'medium' ? 50 : 25;
             break;
         }
     }
 
-    // Boost severity for high-risk areas
-    if (highRiskAreas.some(area => text.includes(area))) {
-        severityScore = Math.min(10, severityScore + 2);
-        if (suggestedSeverity === 'low') suggestedSeverity = 'medium';
-        if (suggestedSeverity === 'medium') suggestedSeverity = 'high';
-    }
-
-    // Calculate confidence (0-1)
+    const suggestedDepartment = ROUTING_RULES[type] || ROUTING_RULES.other;
     const confidence = Math.min(1, 0.5 + (foundKeywords.length * 0.1));
 
     return {
-        detectedType,
-        suggestedSeverity,
-        priority: severityScore,
-        confidence,
+        nlpCategory: type,
+        priorityTag,
+        priorityScore,
+        aiSummary: `${type.replace(/_/g, ' ')} issue reported at ${incident.location?.area || 'unknown location'}. Severity: ${priorityTag}. Recommended department: ${suggestedDepartment}.`,
+        suggestedDepartment,
+        classificationConfidence: confidence,
+        sentimentScore: priorityTag === 'critical' ? -0.8 : priorityTag === 'high' ? -0.5 : -0.2,
+        llmModel: 'rule-based',
+        rawResponse: null,
+        // backward compat
+        detectedType: type,
+        suggestedSeverity: priorityTag,
+        priority: priorityScore / 10,
         keywords: foundKeywords.slice(0, 10)
     };
 }
 
-/**
- * Generate a summary for an incident
- * @param {Object} incident
- * @returns {string} Summary text
- */
-function generateSummary(incident) {
-    const { type, severity, location } = incident;
-    const typeLabels = {
-        pothole: 'Road pothole issue',
-        traffic: 'Traffic congestion',
-        flooding: 'Flooding/waterlogging',
-        streetlight: 'Street light malfunction',
-        garbage: 'Garbage/waste issue',
-        accident: 'Road accident',
-        'water-leak': 'Water supply issue',
-        'road-damage': 'Road damage',
-        'public-safety': 'Public safety concern',
-        noise: 'Noise disturbance',
-        'illegal-parking': 'Illegal parking',
-        sewage: 'Sewage/drainage issue',
-        other: 'General city issue'
-    };
-
-    return `${typeLabels[type] || 'City issue'} reported in ${location?.area || location?.address || 'the area'}. Severity: ${severity?.toUpperCase() || 'MEDIUM'}.`;
-}
-
 module.exports = {
     classifyIncident,
-    generateSummary
+    classifyWithGemini,
+    classifyWithRules,
+    ROUTING_RULES
 };

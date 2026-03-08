@@ -15,10 +15,11 @@ export function AuthProvider({ children }) {
         const token = localStorage.getItem('token')
         if (token) {
             try {
-                const res = await api.get('/auth/me')
+                const res = await api.get('/auth/profile')
                 setUser(res.data.data)
             } catch (err) {
                 localStorage.removeItem('token')
+                localStorage.removeItem('refreshToken')
             }
         }
         setLoading(false)
@@ -26,14 +27,21 @@ export function AuthProvider({ children }) {
 
     const login = async (email, password) => {
         const res = await api.post('/auth/login', { email, password })
-        localStorage.setItem('token', res.data.token)
+        // Support both old format (token) and new format (accessToken)
+        const accessToken = res.data.accessToken || res.data.token
+        const refreshToken = res.data.refreshToken
+        localStorage.setItem('token', accessToken)
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
         setUser(res.data.user)
         return res.data
     }
 
     const register = async (userData) => {
         const res = await api.post('/auth/register', userData)
-        localStorage.setItem('token', res.data.token)
+        const accessToken = res.data.accessToken || res.data.token
+        const refreshToken = res.data.refreshToken
+        localStorage.setItem('token', accessToken)
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
         setUser(res.data.user)
         return res.data
     }
@@ -42,8 +50,12 @@ export function AuthProvider({ children }) {
         setUser(prev => ({ ...prev, ...updatedData }))
     }
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout')
+        } catch (err) { /* ignore */ }
         localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
         setUser(null)
     }
 

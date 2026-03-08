@@ -29,14 +29,14 @@ function Navbar() {
     const isActive = (path) => location.pathname === path
 
     const navItems = [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['citizen', 'official', 'admin'] },
-        { path: '/report', icon: Plus, label: 'Report', roles: ['citizen', 'official', 'admin'] },
-        { path: '/emergency', icon: Siren, label: 'SOS', roles: ['citizen', 'official', 'admin'], className: 'nav-sos' },
-        { path: '/contact', icon: Mail, label: 'Contact', roles: ['citizen', 'official', 'admin'] },
-        { path: '/command-center', icon: Command, label: 'Command Center', roles: ['official', 'admin'] },
-        { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['official', 'admin'] },
+        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['citizen', 'field_officer', 'government_official', 'admin'] },
+        { path: '/report', icon: Plus, label: 'Report', roles: ['citizen', 'field_officer', 'admin'] },
+        { path: '/emergency', icon: Siren, label: 'SOS', roles: ['citizen', 'field_officer', 'admin'], className: 'nav-sos' },
+        { path: '/contact', icon: Mail, label: 'Contact', roles: ['citizen', 'field_officer', 'government_official', 'admin'] },
+        { path: '/command-center', icon: Command, label: 'Command Center', roles: ['field_officer', 'government_official', 'admin'] },
+        { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['government_official', 'admin'] },
         { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin'] },
-        { path: '/profile', icon: UserCog, label: 'Profile', roles: ['citizen', 'official', 'admin'] },
+        { path: '/profile', icon: UserCog, label: 'Profile', roles: ['citizen', 'field_officer', 'government_official', 'admin'] },
     ]
 
     return (

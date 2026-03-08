@@ -1,45 +1,65 @@
 /**
  * Routing Service - Auto-assigns incidents to departments
+ * Uses ROUTING_RULES map per spec Section 5.6
  */
 
 const Department = require('../models/Department');
+const Assignment = require('../models/Assignment');
 
-// Default department mapping for incident types
-const departmentMapping = {
-    pothole: 'PWD',           // Public Works Department
-    traffic: 'TRAFFIC',       // Traffic Police
-    flooding: 'DRAINAGE',     // Drainage/Stormwater
-    streetlight: 'ELEC',      // Electrical Department
-    garbage: 'BBMP',          // Municipal Corporation
-    accident: 'TRAFFIC',      // Traffic Police
-    'water-leak': 'BWSSB',    // Water Supply Board
-    'road-damage': 'PWD',     // Public Works Department
-    'public-safety': 'POLICE',// City Police
-    noise: 'POLICE',          // City Police
-    'illegal-parking': 'TRAFFIC', // Traffic Police
-    sewage: 'DRAINAGE',       // Drainage Department
-    other: 'BBMP'             // Municipal Corporation
+// Department routing rules (spec Section 5.6)
+const ROUTING_RULES = {
+    pothole: 'Public Works Department',
+    road_damage: 'Public Works Department',
+    traffic: 'Traffic Management Centre',
+    illegal_parking: 'Traffic Management Centre',
+    flooding: 'Stormwater Drainage Department',
+    sewage: 'Stormwater Drainage Department',
+    water_leak: 'Bangalore Water Supply Board',
+    streetlight: 'BESCOM Electrical Services',
+    garbage: 'Bruhat Bengaluru Mahanagara Palike',
+    accident: 'City Police',
+    safety_issue: 'City Police',
+    noise: 'City Police',
+    other: 'Bruhat Bengaluru Mahanagara Palike'
+};
+
+// Short name fallback mapping
+const shortNameMapping = {
+    pothole: 'PWD',
+    road_damage: 'PWD',
+    traffic: 'TRAFFIC',
+    illegal_parking: 'TRAFFIC',
+    flooding: 'DRAINAGE',
+    sewage: 'DRAINAGE',
+    water_leak: 'BWSSB',
+    streetlight: 'ELEC',
+    garbage: 'BBMP',
+    accident: 'POLICE',
+    safety_issue: 'POLICE',
+    noise: 'POLICE',
+    other: 'BBMP'
 };
 
 /**
- * Find and assign the appropriate department for an incident type
- * @param {string} incidentType - Type of incident
- * @returns {Object|null} Department document or null
+ * Find the appropriate department for an incident type
  */
 async function assignDepartment(incidentType) {
     try {
-        // First try to find by handles incident type
-        let department = await Department.findOne({
-            handlesIncidentTypes: incidentType,
-            isActive: true
-        });
-
+        // Try by full name first
+        const deptName = ROUTING_RULES[incidentType] || ROUTING_RULES.other;
+        let department = await Department.findOne({ name: deptName, isActive: true });
         if (department) return department;
 
-        // Fallback to code mapping
-        const deptCode = departmentMapping[incidentType] || 'BBMP';
-        department = await Department.findOne({ code: deptCode, isActive: true });
+        // Fallback: try by incidentTypes array
+        department = await Department.findOne({
+            incidentTypes: incidentType,
+            isActive: true
+        });
+        if (department) return department;
 
+        // Fallback: try by short name
+        const shortName = shortNameMapping[incidentType] || 'BBMP';
+        department = await Department.findOne({ shortName, isActive: true });
         return department;
     } catch (err) {
         console.error('Error assigning department:', err);
@@ -48,35 +68,53 @@ async function assignDepartment(incidentType) {
 }
 
 /**
+ * Create an assignment for an incident to a department
+ */
+async function createAssignment(incidentId, departmentId, options = {}) {
+    try {
+        const dept = await Department.findById(departmentId);
+        if (!dept) return null;
+
+        // Check if assignment already exists
+        const existing = await Assignment.findOne({ incidentId });
+        if (existing) return existing;
+
+        const assignment = await Assignment.create({
+            incidentId,
+            departmentId,
+            officerId: options.officerId || null,
+            assignedBy: options.assignedBy || null,
+            slaDueBy: options.slaDueBy || new Date(Date.now() + dept.slaHours * 3600000),
+            notes: options.notes || `Auto-assigned to ${dept.name}`
+        });
+
+        // Update department current load
+        const activeCount = await Assignment.countDocuments({
+            departmentId,
+            status: { $in: ['pending', 'acknowledged', 'in_progress'] }
+        });
+        await Department.findByIdAndUpdate(departmentId, { currentLoad: activeCount });
+
+        return assignment;
+    } catch (err) {
+        console.error('Error creating assignment:', err);
+        return null;
+    }
+}
+
+/**
  * Get workload for all departments
- * @returns {Array} Department workloads
  */
 async function getDepartmentWorkloads() {
-    const Incident = require('../models/Incident');
-
     try {
-        const workloads = await Department.aggregate([
-            {
-                $lookup: {
-                    from: 'incidents',
-                    let: { deptId: '$_id' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$assignedDepartment', '$$deptId'] } } },
-                        { $match: { status: { $in: ['reported', 'acknowledged', 'in-progress'] } } }
-                    ],
-                    as: 'activeIncidents'
-                }
-            },
-            {
-                $project: {
-                    name: 1,
-                    code: 1,
-                    activeCount: { $size: '$activeIncidents' }
-                }
-            },
+        const workloads = await Assignment.aggregate([
+            { $match: { status: { $in: ['pending', 'acknowledged', 'in_progress'] } } },
+            { $group: { _id: '$departmentId', activeCount: { $sum: 1 } } },
+            { $lookup: { from: 'departments', localField: '_id', foreignField: '_id', as: 'dept' } },
+            { $unwind: '$dept' },
+            { $project: { name: '$dept.name', shortName: '$dept.shortName', activeCount: 1 } },
             { $sort: { activeCount: -1 } }
         ]);
-
         return workloads;
     } catch (err) {
         console.error('Error getting workloads:', err);
@@ -85,29 +123,24 @@ async function getDepartmentWorkloads() {
 }
 
 /**
- * Suggest officer assignment based on workload
- * @param {string} departmentId 
- * @returns {Object|null} Suggested officer
+ * Suggest officer with least workload
  */
 async function suggestOfficer(departmentId) {
     const Incident = require('../models/Incident');
-
     try {
         const department = await Department.findById(departmentId).populate('officers', 'name email');
         if (!department || !department.officers.length) return null;
 
-        // Count active incidents per officer
         const officerWorkloads = await Promise.all(
             department.officers.map(async (officer) => {
-                const count = await Incident.countDocuments({
-                    assignedOfficer: officer._id,
-                    status: { $in: ['acknowledged', 'in-progress'] }
+                const count = await Assignment.countDocuments({
+                    officerId: officer._id,
+                    status: { $in: ['pending', 'acknowledged', 'in_progress'] }
                 });
                 return { officer, count };
             })
         );
 
-        // Return officer with least workload
         officerWorkloads.sort((a, b) => a.count - b.count);
         return officerWorkloads[0]?.officer || null;
     } catch (err) {
@@ -118,7 +151,9 @@ async function suggestOfficer(departmentId) {
 
 module.exports = {
     assignDepartment,
+    createAssignment,
     getDepartmentWorkloads,
     suggestOfficer,
-    departmentMapping
+    ROUTING_RULES,
+    shortNameMapping
 };

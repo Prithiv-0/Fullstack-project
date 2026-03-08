@@ -1,73 +1,62 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Mail, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react'
 import './Auth.css'
 
-function Login() {
-    const [formData, setFormData] = useState({ email: '', password: '' })
-    const [showPassword, setShowPassword] = useState(false)
+export default function Login() {
+    const nav = useNavigate()
+    const { login } = useAuth()
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [showPass, setShowPass] = useState(false)
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const { login } = useAuth()
-    const navigate = useNavigate()
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
-        setError('')
-    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setLoading(true)
         setError('')
-
+        if (!email || !password) { setError('Please fill in all fields'); return }
+        setLoading(true)
         try {
-            await login(formData.email, formData.password)
-            navigate('/dashboard')
+            await login(email, password)
+            nav('/dashboard')
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed')
-        } finally {
-            setLoading(false)
+            setError(err.response?.data?.error || 'Login failed. Please check your credentials.')
         }
+        setLoading(false)
     }
 
     return (
         <div className="auth-container">
             <div className="auth-background">
-                <div className="bg-gradient" />
-                <div className="bg-grid" />
+                <div className="bg-gradient"></div>
+                <div className="bg-grid"></div>
             </div>
 
             <div className="auth-card fade-in">
                 <div className="auth-header">
                     <div className="auth-logo">
-                        <Shield size={48} />
+                        <Shield size={36} />
                     </div>
-                    <h1 className="auth-title">Welcome Back</h1>
-                    <p className="auth-subtitle">Sign in to Smart City Command Platform</p>
+                    <h1 className="auth-title">Smart City Command</h1>
+                    <p className="auth-subtitle">Sign in to your account</p>
                 </div>
 
-                {error && (
-                    <div className="auth-error">
-                        <AlertCircle size={16} />
-                        {error}
-                    </div>
-                )}
+                {error && <div className="auth-error">{error}</div>}
 
-                <form onSubmit={handleSubmit} className="auth-form">
+                <form className="auth-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label">Email Address</label>
+                        <label className="form-label">Email</label>
                         <div className="input-wrapper">
-                            <Mail className="input-icon" size={18} />
+                            <Mail size={16} className="input-icon" />
                             <input
-                                type="email"
-                                name="email"
                                 className="form-input with-icon"
+                                type="email"
                                 placeholder="you@example.com"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                autoFocus
                             />
                         </div>
                     </div>
@@ -75,47 +64,38 @@ function Login() {
                     <div className="form-group">
                         <label className="form-label">Password</label>
                         <div className="input-wrapper">
-                            <Lock className="input-icon" size={18} />
+                            <Lock size={16} className="input-icon" />
                             <input
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
                                 className="form-input with-icon"
-                                placeholder="Enter your password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
+                                type={showPass ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
                             />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            <button type="button" className="password-toggle" onClick={() => setShowPass(!showPass)}>
+                                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
-                        {loading ? 'Signing in...' : 'Sign In'}
+                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%', marginTop: '0.5rem', padding: '0.85rem' }} disabled={loading}>
+                        {loading ? 'Signing in...' : <><LogIn size={18} /> Sign In</>}
                     </button>
                 </form>
 
                 <div className="auth-footer">
-                    <p>Don't have an account? <Link to="/register">Create one</Link></p>
+                    <p>Don't have an account? <Link to="/register">Create Account</Link></p>
                 </div>
 
                 <div className="auth-demo">
-                    <p className="demo-title">Demo Accounts:</p>
+                    <p className="demo-title">Demo Accounts</p>
                     <div className="demo-accounts">
                         <span>admin@smartcity.gov.in</span>
-                        <span>official@smartcity.gov.in</span>
                         <span>citizen@example.com</span>
                     </div>
-                    <p className="demo-password">Password: admin123 / official123 / citizen123</p>
+                    <p className="demo-password">Password: password123</p>
                 </div>
             </div>
         </div>
     )
 }
-
-export default Login
