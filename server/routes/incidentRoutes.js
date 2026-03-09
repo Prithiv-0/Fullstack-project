@@ -28,10 +28,10 @@ router.post('/', authenticate, authorize('citizen', 'field_officer', 'admin'), [
     }
 
     try {
-        const { title, description, type, location, mediaUrls } = req.body;
+        const { title, description, type, location, mediaUrls, severity, isEmergency } = req.body;
 
         const incident = await Incident.create({
-            title, description, type, location, mediaUrls,
+            title, description, type, location, mediaUrls, severity, isEmergency,
             reportedBy: req.user.id,
             timeline: [{
                 status: 'reported',
@@ -177,8 +177,8 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // @route   PUT /api/v1/incidents/:id/verify
-// @desc    Verify / reject incident (admin only)
-router.put('/:id/verify', authenticate, authorize('admin'), async (req, res) => {
+// @desc    Verify / reject incident (admin, government_official)
+router.put('/:id/verify', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
         const incident = await Incident.findById(req.params.id);
         if (!incident) {
@@ -216,15 +216,24 @@ router.put('/:id/verify', authenticate, authorize('admin'), async (req, res) => 
 });
 
 // @route   PUT /api/v1/incidents/:id/assign
-// @desc    Assign to department and officer (admin only)
-router.put('/:id/assign', authenticate, authorize('admin'), async (req, res) => {
+// @desc    Assign to department and officer (admin, government_official)
+router.put('/:id/assign', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
         const incident = await Incident.findById(req.params.id);
         if (!incident) {
             return res.status(404).json({ success: false, error: 'Incident not found' });
         }
 
-        const { departmentId, officerId, priority, slaDeadline, notes } = req.body;
+        const {
+            departmentId,
+            officerId,
+            priority,
+            slaDeadline,
+            notes,
+            assignmentType,
+            notifyReporter,
+            referenceNumber
+        } = req.body;
 
         const dept = await Department.findById(departmentId);
         if (!dept) {
@@ -233,12 +242,16 @@ router.put('/:id/assign', authenticate, authorize('admin'), async (req, res) => 
 
         // Create or update assignment
         let assignment = await Assignment.findOne({ incidentId: incident._id });
+        const previousDepartmentId = assignment ? String(assignment.departmentId) : null;
         if (assignment) {
             assignment.departmentId = departmentId;
             assignment.officerId = officerId;
             assignment.assignedBy = req.user.id;
             assignment.slaDueBy = slaDeadline || new Date(Date.now() + dept.slaHours * 3600000);
             assignment.notes = notes;
+            assignment.assignmentType = assignmentType || assignment.assignmentType;
+            assignment.notifyReporter = typeof notifyReporter === 'boolean' ? notifyReporter : assignment.notifyReporter;
+            assignment.referenceNumber = referenceNumber ?? assignment.referenceNumber;
             await assignment.save();
         } else {
             assignment = await Assignment.create({
@@ -247,7 +260,10 @@ router.put('/:id/assign', authenticate, authorize('admin'), async (req, res) => 
                 officerId,
                 assignedBy: req.user.id,
                 slaDueBy: slaDeadline || new Date(Date.now() + dept.slaHours * 3600000),
-                notes
+                notes,
+                assignmentType: assignmentType || 'manual',
+                notifyReporter: Boolean(notifyReporter),
+                referenceNumber: referenceNumber || ''
             });
         }
 
@@ -261,10 +277,18 @@ router.put('/:id/assign', authenticate, authorize('admin'), async (req, res) => 
         await incident.save();
 
         // Update department current load
-        const activeCount = await Assignment.countDocuments({
-            departmentId, status: { $in: ['pending', 'acknowledged', 'in_progress'] }
-        });
-        await Department.findByIdAndUpdate(departmentId, { currentLoad: activeCount });
+        const departmentIdsToRefresh = new Set([String(departmentId)]);
+        if (previousDepartmentId) {
+            departmentIdsToRefresh.add(previousDepartmentId);
+        }
+
+        await Promise.all([...departmentIdsToRefresh].map(async (deptIdToRefresh) => {
+            const activeCount = await Assignment.countDocuments({
+                departmentId: deptIdToRefresh,
+                status: { $in: ['pending', 'acknowledged', 'in_progress'] }
+            });
+            await Department.findByIdAndUpdate(deptIdToRefresh, { currentLoad: activeCount });
+        }));
 
         res.json({ success: true, data: { incident, assignment }, message: 'Incident assigned successfully' });
     } catch (err) {
@@ -312,7 +336,16 @@ router.put('/:id/resolve', authenticate, authorize('field_officer', 'admin'), as
             return res.status(404).json({ success: false, error: 'Incident not found' });
         }
 
-        const { action, proofUrls, notes, resolutionStatus } = req.body;
+        const {
+            action,
+            proofUrls,
+            notes,
+            resolutionStatus,
+            category,
+            timeSpentHours,
+            requiresFollowUp,
+            materialsUsed
+        } = req.body;
 
         const statusBefore = incident.status;
         incident.status = resolutionStatus === 'cannot_resolve' ? 'in_progress' : 'resolved';
@@ -330,7 +363,13 @@ router.put('/:id/resolve', authenticate, authorize('field_officer', 'admin'), as
         await ResolutionLog.create({
             incidentId: incident._id,
             officerId: req.user.id,
-            action, proofUrls, notes,
+            action,
+            proofUrls,
+            notes,
+            resolutionCategory: category,
+            timeSpentHours,
+            requiresFollowUp: Boolean(requiresFollowUp),
+            materialsUsed,
             statusBefore,
             statusAfter: incident.status,
             tta: tta ? Math.round((new Date(tta.updatedAt) - incident.createdAt) / 60000) : null,
@@ -343,6 +382,15 @@ router.put('/:id/resolve', authenticate, authorize('field_officer', 'admin'), as
             await Assignment.findOneAndUpdate(
                 { incidentId: incident._id },
                 { status: 'completed' }
+            );
+        } else {
+            await Assignment.findOneAndUpdate(
+                { incidentId: incident._id },
+                {
+                    status: 'escalated',
+                    escalatedAt: new Date(),
+                    $inc: { escalationCount: 1 }
+                }
             );
         }
 
@@ -414,7 +462,11 @@ router.post('/:id/feedback', authenticate, async (req, res) => {
             comments: req.body.comments || req.body.comment,
             responseSatisfaction: req.body.responseSatisfaction,
             resolvedSatisfaction: req.body.resolvedSatisfaction,
-            easeOfUse: req.body.easeOfUse
+            easeOfUse: req.body.easeOfUse,
+            resolutionSatisfaction: req.body.resolutionSatisfaction,
+            communicationClarity: req.body.communicationClarity,
+            wouldRecommend: req.body.wouldRecommend,
+            followUpRequested: req.body.followUpRequested
         });
 
         res.status(201).json({ success: true, data: feedback });

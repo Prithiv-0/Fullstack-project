@@ -148,11 +148,14 @@ export default function IncidentDetails() {
                         {isAdmin && ['acknowledged', 'reported'].includes(incident.status) && (
                             <Link to={`/incidents/${id}/verify`} className="btn btn-secondary"><Shield size={16} /> Full Verification</Link>
                         )}
+                        {isAdmin && ['acknowledged', 'assigned', 'in_progress'].includes(incident.status) && (
+                            <Link to={`/incidents/${id}/assign`} className="btn btn-primary"><Building size={16} /> Assign Dept/Officer</Link>
+                        )}
                         {(isOfficer || isAdmin) && ['assigned', 'acknowledged'].includes(incident.status) && (
                             <button className="btn btn-primary" disabled={actionLoading} onClick={() => handleAction('acknowledge')}><CheckCircle size={16} /> Start Work</button>
                         )}
                         {(isOfficer || isAdmin) && incident.status === 'in_progress' && (
-                            <button className="btn btn-primary" disabled={actionLoading} onClick={() => handleAction('resolve', { action: 'Issue resolved', resolutionStatus: 'resolved' })}><CheckCircle size={16} /> Mark Resolved</button>
+                            <Link to={`/incidents/${id}/resolve`} className="btn btn-primary"><CheckCircle size={16} /> Resolve Incident</Link>
                         )}
                         {isAdmin && incident.status === 'resolved' && (
                             <button className="btn btn-secondary" disabled={actionLoading} onClick={() => handleAction('close')}><CheckCircle size={16} /> Close</button>

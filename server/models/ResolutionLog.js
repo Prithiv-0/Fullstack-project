@@ -19,6 +19,13 @@ const ResolutionLogSchema = new mongoose.Schema({
     },
     action: String,
     proofUrls: [String],
+    resolutionCategory: String,
+    timeSpentHours: Number,
+    materialsUsed: String,
+    requiresFollowUp: {
+        type: Boolean,
+        default: false
+    },
     statusBefore: String,
     statusAfter: String,
     timestamp: {

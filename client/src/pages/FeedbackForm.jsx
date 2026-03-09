@@ -23,7 +23,17 @@ function StarRating({ value, onChange, label }) {
 export default function FeedbackForm() {
     const { id } = useParams()
     const nav = useNavigate()
-    const [form, setForm] = useState({ rating: 0, responseSatisfaction: 0, resolvedSatisfaction: 0, easeOfUse: 0, comments: '' })
+    const [form, setForm] = useState({
+        rating: 0,
+        responseSatisfaction: 0,
+        resolvedSatisfaction: 0,
+        easeOfUse: 0,
+        resolutionSatisfaction: '',
+        communicationClarity: '',
+        wouldRecommend: '',
+        followUpRequested: false,
+        comments: ''
+    })
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
@@ -31,6 +41,10 @@ export default function FeedbackForm() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.rating) { setError('Please provide an overall rating'); return }
+        if (!form.resolutionSatisfaction || !form.communicationClarity || form.wouldRecommend === '') {
+            setError('Please complete the service review questions before submitting')
+            return
+        }
         setLoading(true); setError('')
         try {
             await api.post('/feedback', { incidentId: id, ...form })
@@ -71,6 +85,50 @@ export default function FeedbackForm() {
                         <StarRating label="Response Speed" value={form.responseSatisfaction} onChange={v => setForm({ ...form, responseSatisfaction: v })} />
                         <StarRating label="Resolution Quality" value={form.resolvedSatisfaction} onChange={v => setForm({ ...form, resolvedSatisfaction: v })} />
                         <StarRating label="Ease of Use" value={form.easeOfUse} onChange={v => setForm({ ...form, easeOfUse: v })} />
+
+                        <div className="form-group">
+                            <label className="form-label">Resolution Satisfaction *</label>
+                            <select className="form-select" value={form.resolutionSatisfaction} onChange={e => setForm({ ...form, resolutionSatisfaction: e.target.value })}>
+                                <option value="">Select an option</option>
+                                <option value="very_unsatisfied">Very unsatisfied</option>
+                                <option value="unsatisfied">Unsatisfied</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="satisfied">Satisfied</option>
+                                <option value="very_satisfied">Very satisfied</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Communication Clarity *</label>
+                            <select className="form-select" value={form.communicationClarity} onChange={e => setForm({ ...form, communicationClarity: e.target.value })}>
+                                <option value="">Select an option</option>
+                                <option value="poor">Poor</option>
+                                <option value="fair">Fair</option>
+                                <option value="good">Good</option>
+                                <option value="excellent">Excellent</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Would you recommend this service? *</label>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input type="radio" name="wouldRecommend" checked={form.wouldRecommend === true} onChange={() => setForm({ ...form, wouldRecommend: true })} />
+                                    <span>Yes</span>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input type="radio" name="wouldRecommend" checked={form.wouldRecommend === false} onChange={() => setForm({ ...form, wouldRecommend: false })} />
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={form.followUpRequested} onChange={e => setForm({ ...form, followUpRequested: e.target.checked })} />
+                                <span>Request a follow-up from the department</span>
+                            </label>
+                        </div>
 
                         <div className="form-group">
                             <label className="form-label">Additional Comments</label>

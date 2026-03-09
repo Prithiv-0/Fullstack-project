@@ -23,7 +23,8 @@ export default function ReportIncident() {
     const nav = useNavigate()
     const [form, setForm] = useState({
         type: '', title: '', description: '',
-        location: { lat: '', lng: '', address: '', area: '', zone: '' }
+        location: { lat: '', lng: '', address: '', area: '', zone: '' },
+        severity: 'medium', isEmergency: false
     })
     const [loading, setLoading] = useState(false)
     const [gpsLoading, setGpsLoading] = useState(false)
@@ -68,6 +69,8 @@ export default function ReportIncident() {
                 type: form.type,
                 title: form.title,
                 description: form.description,
+                severity: form.severity,
+                isEmergency: form.isEmergency,
                 location: {
                     lat: parseFloat(form.location.lat),
                     lng: parseFloat(form.location.lng),
@@ -136,6 +139,25 @@ export default function ReportIncident() {
                         <label className="form-label">Title (min 10 characters)</label>
                         <input className="form-input" placeholder="Brief description of the issue" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
                     </div>
+
+                    <div className="grid-2">
+                        <div className="form-group">
+                            <label className="form-label">Severity Level</label>
+                            <select className="form-input" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>
+                                <option value="low">Low - Minor nuisance</option>
+                                <option value="medium">Medium - Needs attention</option>
+                                <option value="high">High - Significant disruption</option>
+                                <option value="critical">Critical - Immediate danger</option>
+                            </select>
+                        </div>
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 'bold', color: 'var(--danger)' }}>
+                                <input type="checkbox" checked={form.isEmergency} onChange={e => setForm({ ...form, isEmergency: e.target.checked })} />
+                                Is this an emergency?
+                            </label>
+                        </div>
+                    </div>
+
                     <div className="form-group">
                         <label className="form-label">Detailed Description</label>
                         <textarea className="form-textarea" placeholder="Provide more details about the issue..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} />

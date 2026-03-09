@@ -40,7 +40,21 @@ const AssignmentSchema = new mongoose.Schema({
         default: 0
     },
     escalatedAt: Date,
-    notes: String
+    notes: String,
+    assignmentType: {
+        type: String,
+        enum: ['manual', 'auto'],
+        default: 'manual'
+    },
+    notifyReporter: {
+        type: Boolean,
+        default: false
+    },
+    referenceNumber: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Reference number cannot exceed 100 characters']
+    }
 });
 
 AssignmentSchema.index({ incidentId: 1 });

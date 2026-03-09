@@ -7,7 +7,16 @@ import './ContactDepartment.css'
 export default function ContactDepartment() {
     const nav = useNavigate()
     const [departments, setDepartments] = useState([])
-    const [form, setForm] = useState({ department: '', subject: '', message: '', priority: 'medium' })
+    const [form, setForm] = useState({
+        department: '',
+        subject: '',
+        message: '',
+        priority: 'medium',
+        preferredContactMethod: 'email',
+        requestCallback: false,
+        urgentRequest: false,
+        attachmentUrls: ['']
+    })
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
@@ -21,10 +30,28 @@ export default function ContactDepartment() {
         if (!form.department || !form.subject || !form.message) { setError('All fields required'); return }
         setLoading(true); setError('')
         try {
-            await api.post(`/departments/${form.department}/contact`, { subject: form.subject, message: form.message, priority: form.priority })
+            await api.post(`/departments/${form.department}/contact`, {
+                subject: form.subject,
+                message: form.message,
+                priority: form.priority,
+                preferredContactMethod: form.preferredContactMethod,
+                requestCallback: form.requestCallback,
+                urgentRequest: form.urgentRequest,
+                attachmentUrls: form.attachmentUrls.filter(Boolean)
+            })
             setSuccess(true)
         } catch (err) { setError(err.response?.data?.error || 'Failed to send') }
         setLoading(false)
+    }
+
+    const updateAttachmentUrl = (index, value) => {
+        const attachmentUrls = [...form.attachmentUrls]
+        attachmentUrls[index] = value
+        setForm({ ...form, attachmentUrls })
+    }
+
+    const addAttachmentField = () => {
+        setForm({ ...form, attachmentUrls: [...form.attachmentUrls, ''] })
     }
 
     if (success) {
@@ -70,12 +97,43 @@ export default function ContactDepartment() {
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
                                 <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
                             </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Preferred Contact Method</label>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                                {['email', 'phone', 'sms'].map(method => (
+                                    <label key={method} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input type="radio" name="preferredContactMethod" value={method} checked={form.preferredContactMethod === method} onChange={e => setForm({ ...form, preferredContactMethod: e.target.value })} />
+                                        <span style={{ textTransform: 'capitalize' }}>{method}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                         <div className="form-group">
                             <label className="form-label">Message *</label>
                             <textarea className="form-textarea" placeholder="Type your message..." value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} rows={5} />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={form.requestCallback} onChange={e => setForm({ ...form, requestCallback: e.target.checked })} />
+                                <span>Request a callback from the department</span>
+                            </label>
+                        </div>
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={form.urgentRequest} onChange={e => setForm({ ...form, urgentRequest: e.target.checked })} />
+                                <span>Mark this as urgent follow-up</span>
+                            </label>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Supporting Links</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {form.attachmentUrls.map((url, index) => (
+                                    <input key={index} className="form-input" placeholder="Paste document or photo URL" value={url} onChange={e => updateAttachmentUrl(index, e.target.value)} />
+                                ))}
+                                <button type="button" className="btn btn-sm btn-secondary" onClick={addAttachmentField}>Add another link</button>
+                            </div>
                         </div>
                         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
                             {loading ? 'Sending...' : <><Send size={18} /> Send Message</>}

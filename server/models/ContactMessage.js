@@ -27,6 +27,20 @@ const ContactMessageSchema = new mongoose.Schema({
         enum: ['low', 'medium', 'high'],
         default: 'medium'
     },
+    preferredContactMethod: {
+        type: String,
+        enum: ['email', 'phone', 'sms'],
+        default: 'email'
+    },
+    requestCallback: {
+        type: Boolean,
+        default: false
+    },
+    urgentRequest: {
+        type: Boolean,
+        default: false
+    },
+    attachmentUrls: [String],
     status: {
         type: String,
         enum: ['pending', 'read', 'responded', 'closed'],

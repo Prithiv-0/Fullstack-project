@@ -177,16 +177,29 @@ router.get('/:id/incidents', authenticate, authorize('admin', 'government_offici
 // @desc    Send message to department
 router.post('/:id/contact', authenticate, async (req, res) => {
     try {
-        const { subject, message, priority } = req.body;
+        const {
+            subject,
+            message,
+            priority,
+            preferredContactMethod,
+            requestCallback,
+            urgentRequest,
+            attachmentUrls
+        } = req.body;
         if (!subject || !message) {
             return res.status(400).json({ success: false, error: 'Subject and message required' });
         }
 
         const msg = await ContactMessage.create({
-            sender: req.user.id,
+            from: req.user.id,
             department: req.params.id,
-            subject, message,
-            priority: priority || 'medium'
+            subject,
+            message,
+            priority: priority || 'medium',
+            preferredContactMethod: preferredContactMethod || 'email',
+            requestCallback: Boolean(requestCallback),
+            urgentRequest: Boolean(urgentRequest),
+            attachmentUrls: Array.isArray(attachmentUrls) ? attachmentUrls.filter(Boolean) : []
         });
 
         res.status(201).json({ success: true, data: msg });
