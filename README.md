@@ -68,8 +68,7 @@ CLIENT_URL=http://localhost:5173
 
 ```bash
 cd server
-node seeds/seedData.js       # Creates departments and users
-node seeds/seedIncidents.js  # Creates sample incidents
+npm run seed                 # Full seed: users, incidents, assignments, feedback, analytics, reports
 ```
 
 ### Run Development Servers
@@ -87,9 +86,10 @@ npm run client      # Frontend on http://localhost:5173
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@smartcity.gov.in` | `admin123` |
-| Official | `official@smartcity.gov.in` | `official123` |
-| Citizen | `citizen@example.com` | `citizen123` |
+| Admin | `admin@smartcity.gov.in` | `password123` |
+| Official | `official@smartcity.gov.in` | `password123` |
+| Officer | `ravi.officer@smartcity.gov.in` | `password123` |
+| Citizen | `citizen@example.com` | `password123` |
 
 ## 📁 Project Structure
 

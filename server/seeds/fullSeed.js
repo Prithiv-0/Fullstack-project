@@ -23,7 +23,7 @@ const Notification = require('../models/Notification');
 const Feedback = require('../models/Feedback');
 const AnalyticsAggregate = require('../models/AnalyticsAggregate');
 
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/smartcity';
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/smart-city-command';
 
 // ─── HELPER ───
 const daysAgo = (n) => new Date(Date.now() - n * 86400000);
