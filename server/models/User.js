@@ -1,3 +1,18 @@
+/**
+ * User.js - Mongoose Schema & Model for Platform Users
+ *
+ * Defines the User schema with fields for authentication, profile info,
+ * role-based access control, and department association. Supports four roles:
+ * citizen, field_officer, government_official, and admin.
+ *
+ * Key features:
+ *  - Password hashing with bcrypt (12 salt rounds) on save
+ *  - JWT access token generation (15-minute expiry by default)
+ *  - JWT refresh token generation (7-day expiry by default)
+ *  - Password comparison method for login verification
+ *  - Auto-generated UUID for public-facing userId field
+ */
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
