@@ -11,10 +11,14 @@ import Analytics from './pages/Analytics'
 import Departments from './pages/Departments'
 import EditProfile from './pages/EditProfile'
 import FeedbackForm from './pages/FeedbackForm'
+import FeedbackHub from './pages/FeedbackHub'
 import EmergencySOS from './pages/EmergencySOS'
 import ContactDepartment from './pages/ContactDepartment'
 import VerifyIncident from './pages/VerifyIncident'
 import TrackComplaint from './pages/TrackComplaint'
+import AssignIncident from './pages/AssignIncident'
+import ResolveIncident from './pages/ResolveIncident'
+import AuditReport from './pages/AuditReport'
 
 // Protected Route Component
 function ProtectedRoute({ children, roles }) {
@@ -104,8 +108,14 @@ function App() {
           } />
 
           <Route path="/incidents/:id/feedback" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['citizen']}>
               <FeedbackForm />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/feedback" element={
+            <ProtectedRoute roles={['citizen']}>
+              <FeedbackHub />
             </ProtectedRoute>
           } />
 
@@ -124,6 +134,24 @@ function App() {
           <Route path="/incidents/:id/verify" element={
             <ProtectedRoute roles={['government_official', 'admin']}>
               <VerifyIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/incidents/:id/assign" element={
+            <ProtectedRoute roles={['admin', 'government_official']}>
+              <AssignIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/incidents/:id/resolve" element={
+            <ProtectedRoute roles={['admin', 'field_officer']}>
+              <ResolveIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/audit-report" element={
+            <ProtectedRoute roles={['admin']}>
+              <AuditReport />
             </ProtectedRoute>
           } />
 

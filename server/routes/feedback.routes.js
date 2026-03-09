@@ -9,7 +9,18 @@ const Incident = require('../models/Incident');
 // @access  citizen
 router.post('/', authenticate, authorize('citizen'), async (req, res) => {
     try {
-        const { incidentId, rating, comments, responseSatisfaction, resolvedSatisfaction, easeOfUse } = req.body;
+        const {
+            incidentId,
+            rating,
+            comments,
+            responseSatisfaction,
+            resolvedSatisfaction,
+            easeOfUse,
+            resolutionSatisfaction,
+            communicationClarity,
+            wouldRecommend,
+            followUpRequested
+        } = req.body;
 
         if (!incidentId || !rating) {
             return res.status(400).json({ success: false, error: 'incidentId and rating are required' });
@@ -28,12 +39,35 @@ router.post('/', authenticate, authorize('citizen'), async (req, res) => {
 
         const feedback = await Feedback.create({
             incidentId, citizenId: req.user.id,
-            rating, comments, responseSatisfaction, resolvedSatisfaction, easeOfUse
+            rating,
+            comments,
+            responseSatisfaction,
+            resolvedSatisfaction,
+            easeOfUse,
+            resolutionSatisfaction,
+            communicationClarity,
+            wouldRecommend,
+            followUpRequested: Boolean(followUpRequested)
         });
 
         res.status(201).json({ success: true, data: feedback, message: 'Feedback submitted' });
     } catch (err) {
         console.error(err);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// @route   GET /api/v1/feedback/my
+// @desc    Get my submitted feedback
+// @access  citizen
+router.get('/my', authenticate, authorize('citizen'), async (req, res) => {
+    try {
+        const feedback = await Feedback.find({ citizenId: req.user.id })
+            .populate('incidentId', 'title type status updatedAt')
+            .sort({ submittedAt: -1 })
+            .lean();
+        res.json({ success: true, data: feedback });
+    } catch (err) {
         res.status(500).json({ success: false, error: 'Server error' });
     }
 });

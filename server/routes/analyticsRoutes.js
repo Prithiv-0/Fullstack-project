@@ -90,7 +90,7 @@ router.get('/response-times', authenticate, authorize('admin'), async (req, res)
 });
 
 // @route   GET /api/v1/analytics/dept-performance
-router.get('/dept-performance', authenticate, authorize('admin'), async (req, res) => {
+router.get('/dept-performance', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
         const performance = await Assignment.aggregate([
             { $group: { _id: '$departmentId', total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } }, escalated: { $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] } } } },
@@ -152,7 +152,7 @@ router.get('/hotspots', authenticate, authorize('government_official', 'admin'),
     } catch (err) { res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
-router.get('/department-performance', authenticate, authorize('admin'), async (req, res) => {
+router.get('/department-performance', authenticate, authorize('admin', 'government_official'), async (req, res) => {
     try {
         const data = await Assignment.aggregate([
             { $group: { _id: '$departmentId', total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } } } },

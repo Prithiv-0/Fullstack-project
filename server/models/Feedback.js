@@ -39,6 +39,19 @@ const FeedbackSchema = new mongoose.Schema({
         min: 1,
         max: 5
     },
+    resolutionSatisfaction: {
+        type: String,
+        enum: ['very_unsatisfied', 'unsatisfied', 'neutral', 'satisfied', 'very_satisfied']
+    },
+    communicationClarity: {
+        type: String,
+        enum: ['poor', 'fair', 'good', 'excellent']
+    },
+    wouldRecommend: Boolean,
+    followUpRequested: {
+        type: Boolean,
+        default: false
+    },
     submittedAt: {
         type: Date,
         default: Date.now

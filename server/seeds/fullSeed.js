@@ -183,6 +183,7 @@ async function seed() {
                 description: tpl.desc,
                 location: { lat: loc.lat + (Math.random() - 0.5) * 0.01, lng: loc.lng + (Math.random() - 0.5) * 0.01, address: `Near ${loc.area} Main Road`, area: loc.area, zone: loc.zone },
                 severity,
+                isEmergency: severity === 'critical' || ['accident', 'flooding', 'safety_issue'].includes(tpl.type),
                 status,
                 reportedBy: randomPick(citizens)._id,
                 isVerified: ['acknowledged', 'assigned', 'in_progress', 'resolved', 'closed'].includes(status),
@@ -208,6 +209,7 @@ async function seed() {
             const dept = deptByType[inc.type] || departments[5]; // BBMP fallback
             const assignedAt = new Date(inc.createdAt.getTime() + randomInt(1, 12) * 3600000);
             const aStatus = inc.status === 'resolved' || inc.status === 'closed' ? 'completed' : inc.status === 'in_progress' ? 'in_progress' : 'pending';
+            const referenceNumber = `AUTO-${String(assignments.length + 1).padStart(4, '0')}`;
 
             assignments.push({
                 assignmentId: crypto.randomUUID(),
@@ -219,7 +221,10 @@ async function seed() {
                 slaDueBy: new Date(assignedAt.getTime() + dept.slaHours * 3600000),
                 status: aStatus,
                 escalationCount: aStatus === 'escalated' ? 1 : 0,
-                notes: 'Auto-assigned by system based on incident type routing rules.'
+                notes: 'Auto-assigned by system based on incident type routing rules.',
+                assignmentType: 'auto',
+                notifyReporter: true,
+                referenceNumber
             });
         }
 
@@ -264,6 +269,10 @@ async function seed() {
             incidentId: inc._id,
             officerId: randomPick(officers)._id,
             action: `Issue resolved: ${inc.type.replace(/_/g, ' ')} at ${inc.location.area} has been addressed. Area inspected and cleared.`,
+            resolutionCategory: randomPick(['repair', 'maintenance', 'replacement', 'cleaning']),
+            timeSpentHours: randomInt(1, 8),
+            materialsUsed: randomPick(['Concrete mix, road markers', 'Drainage tools and pump', 'Replacement light unit', 'Cleaning equipment and safety cones']),
+            requiresFollowUp: Math.random() > 0.65,
             statusBefore: 'in_progress',
             statusAfter: inc.status,
             timestamp: new Date(inc.updatedAt),
@@ -337,6 +346,10 @@ async function seed() {
             responseSatisfaction: randomInt(2, 5),
             resolvedSatisfaction: randomInt(3, 5),
             easeOfUse: randomInt(3, 5),
+            resolutionSatisfaction: randomPick(['neutral', 'satisfied', 'very_satisfied']),
+            communicationClarity: randomPick(['fair', 'good', 'excellent']),
+            wouldRecommend: Math.random() > 0.25,
+            followUpRequested: Math.random() > 0.7,
             comments: randomPick([
                 'Quick resolution, very impressed with the speed!',
                 'Good work, but took a bit longer than expected.',

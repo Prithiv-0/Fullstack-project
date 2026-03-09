@@ -40,6 +40,10 @@ const IncidentSchema = new mongoose.Schema({
         enum: ['critical', 'high', 'medium', 'low'],
         default: 'medium'
     },
+    isEmergency: {
+        type: Boolean,
+        default: false
+    },
     status: {
         type: String,
         enum: ['reported', 'acknowledged', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected'],
