@@ -1,7 +1,14 @@
+/**
+ * Notification.js - Mongoose Schema & Model for User Notifications
+ *
+ * Stores notification messages sent to users via multiple channels:
+ * email, SMS, WhatsApp, push, or in-app. Tracks delivery status
+ * (pending, sent, delivered, failed, read) with timestamps.
+ * Used by the SLA ticker and incident lifecycle to alert admins and citizens.
+ */
+
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-
-const NotificationSchema = new mongoose.Schema({
     notifId: {
         type: String,
         default: () => crypto.randomUUID(),
