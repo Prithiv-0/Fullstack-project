@@ -1,7 +1,16 @@
+/**
+ * Feedback.js - Mongoose Schema & Model for Citizen Feedback
+ *
+ * Captures citizen feedback on resolved incidents. Includes overall rating
+ * (1-5), response satisfaction, resolution satisfaction, ease of use scores,
+ * communication clarity ratings, and a recommendation flag.
+ *
+ * Linked to both the incident and the citizen who submitted the feedback.
+ * Indexed on incidentId and citizenId for efficient querying.
+ */
+
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-
-const FeedbackSchema = new mongoose.Schema({
     feedbackId: {
         type: String,
         default: () => crypto.randomUUID(),
