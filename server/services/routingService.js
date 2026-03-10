@@ -1,12 +1,21 @@
 /**
- * Routing Service - Auto-assigns incidents to departments
- * Uses ROUTING_RULES map per spec Section 5.6
+ * routingService.js - Automatic Department Assignment & Workload Balancing
+ *
+ * Implements the intelligent routing system (Spec Section 5.6) that auto-assigns
+ * incoming incidents to the appropriate government department. The service uses
+ * a three-tier lookup strategy:
+ *  1. Full department name match via ROUTING_RULES
+ *  2. incidentTypes array match on the Department model
+ *  3. Short name fallback (PWD, TRAFFIC, BBMP, etc.)
+ *
+ * Also provides workload aggregation across departments and a least-loaded
+ * officer suggestion algorithm for optimal assignment distribution.
  */
 
 const Department = require('../models/Department');
 const Assignment = require('../models/Assignment');
 
-// Department routing rules (spec Section 5.6)
+// Full department name routing rules — maps each incident type to a department
 const ROUTING_RULES = {
     pothole: 'Public Works Department',
     road_damage: 'Public Works Department',
