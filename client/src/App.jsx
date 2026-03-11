@@ -1,3 +1,23 @@
+/**
+ * App.jsx - Root Application Component & Route Configuration
+ *
+ * Defines all client-side routes with role-based access control.
+ * Uses a ProtectedRoute wrapper component that:
+ *  - Shows a loading spinner while auth state initializes
+ *  - Redirects unauthenticated users to /login
+ *  - Redirects unauthorized roles to /dashboard
+ *
+ * Route categories:
+ *  - Public: /login, /register
+ *  - All authenticated: /dashboard, /track, /incidents/:id, /profile, /emergency, /contact
+ *  - Citizens only: /report, /feedback, /incidents/:id/feedback
+ *  - Officials/Admin: /command-center, /analytics, /incidents/:id/verify, /incidents/:id/assign
+ *  - Admin only: /departments, /audit-report
+ *  - Field officers: /incidents/:id/resolve
+ *
+ * The Navbar is conditionally rendered only for authenticated users.
+ */
+
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
