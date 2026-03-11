@@ -1,3 +1,14 @@
+/**
+ * @module routes/ai.routes
+ * @description AI-powered incident classification routes.
+ *   Triggers LLM-based classification of incidents, stores intelligence results,
+ *   and supports both single and batch classification workflows.
+ *
+ * @routes
+ *   POST /classify/:incidentId - Classify a single incident via AI (admin)
+ *   GET  /classify/:incidentId - Retrieve stored classification for an incident
+ *   POST /classify/batch       - Classify multiple incidents in one request (admin)
+ */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

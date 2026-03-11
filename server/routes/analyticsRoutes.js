@@ -1,3 +1,22 @@
+/**
+ * @module routes/analyticsRoutes
+ * @description Analytics and dashboard routes for incident data aggregation.
+ *   Provides statistics, distributions, trends, and department performance metrics
+ *   for admin and government official dashboards.
+ *
+ * @routes
+ *   GET /dashboard             - Dashboard summary (totals, SLA breaches, avg response time)
+ *   GET /incidents-by-type     - Incident count grouped by type
+ *   GET /severity-distribution - Incident count grouped by severity
+ *   GET /status-distribution   - Incident count grouped by status
+ *   GET /response-times        - Average time-to-acknowledge and time-to-resolve per department
+ *   GET /dept-performance      - Department resolution rates and escalation counts
+ *   GET /critical-feed         - Recent critical/high-severity unresolved incidents
+ *   GET /overview              - (Legacy) Combined overview statistics
+ *   GET /trends                - Daily incident counts over a configurable window
+ *   GET /hotspots              - Geographic hotspots by incident density
+ *   GET /department-performance - (Legacy) Department resolution rates
+ */
 const express = require('express');
 const router = express.Router();
 const Incident = require('../models/Incident');
