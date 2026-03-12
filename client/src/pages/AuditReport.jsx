@@ -1,3 +1,9 @@
+/**
+ * @file AuditReport.jsx - Admin Audit Report Dashboard
+ * @description Comprehensive audit report dashboard with downloadable data and
+ * SLA compliance metrics for administrative oversight and accountability.
+ */
+
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'

@@ -1,3 +1,9 @@
+/**
+ * @file TrackComplaint.jsx - Complaint Tracking Page
+ * @description Enables citizens to track their reported incidents with a status timeline,
+ * showing the progression of each complaint from submission to resolution.
+ */
+
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
 import { Search, Clock, MapPin, CheckCircle, AlertTriangle, ArrowRight, ChevronDown, ChevronUp, Building } from 'lucide-react'

@@ -1,3 +1,9 @@
+/**
+ * @file VerifyIncident.jsx - Incident Verification Page
+ * @description Provides an interface for officials to verify or reject reported incidents
+ * and override the severity level when necessary.
+ */
+
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
