@@ -1,3 +1,15 @@
+/**
+ * Dashboard.jsx - Main Dashboard Page Component
+ *
+ * The primary landing page after login. Shows role-specific content:
+ *  - Citizens: Recent incidents, quick actions (report, track, feedback)
+ *  - Officers: Assigned incidents, workload overview
+ *  - Officials/Admin: City-wide stats, severity distribution, department load
+ *
+ * Fetches incident data and analytics stats from the API and renders
+ * stat cards, recent incident lists, and quick-action navigation links.
+ */
+
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
