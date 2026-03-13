@@ -432,3 +432,104 @@ The SLA (Service Level Agreement) engine runs as a cron job every 5 minutes:
 4. **Tracks** escalation history with timestamps
 
 Each department has a configurable `slaHours` field (default: 24 hours) used to calculate the deadline when an incident is assigned.
+
+## Frontend Pages
+
+| Page | Route | Description | Roles |
+|------|-------|-------------|-------|
+| Login | `/login` | Email/password authentication | Public |
+| Register | `/register` | New user account creation | Public |
+| Dashboard | `/dashboard` | Role-specific overview with stats | All |
+| Report Incident | `/report` | Multi-step incident form with map | Citizen, Officer, Admin |
+| Track Complaint | `/track` | Incident tracking with timeline | All |
+| Incident Details | `/incidents/:id` | Full incident view with actions | All |
+| Command Center | `/command-center` | Operational management dashboard | Officer, Official, Admin |
+| Analytics | `/analytics` | Charts and performance metrics | Official, Admin |
+| Departments | `/departments` | Department CRUD and management | Admin |
+| Edit Profile | `/profile` | User profile update form | All |
+| Feedback Form | `/incidents/:id/feedback` | Resolution feedback submission | Citizen |
+| Feedback Hub | `/feedback` | Feedback history listing | Citizen |
+| Emergency SOS | `/emergency` | One-tap emergency alert | All |
+| Contact Department | `/contact` | Direct department messaging | All |
+| Verify Incident | `/incidents/:id/verify` | Incident verification/rejection | Official, Admin |
+| Assign Incident | `/incidents/:id/assign` | Department/officer assignment | Official, Admin |
+| Resolve Incident | `/incidents/:id/resolve` | Resolution with proof upload | Officer, Admin |
+| Audit Report | `/audit-report` | Comprehensive audit dashboard | Admin |
+
+## Design System
+
+The platform features a premium dark theme with:
+
+- **Glassmorphism Effects** — Semi-transparent card backgrounds with backdrop blur
+- **Gradient Accents** — Cyan-to-purple gradient highlights on active elements
+- **Severity Color Coding** — Red (critical), Orange (high), Yellow (medium), Green (low)
+- **Micro-Animations** — Smooth transitions, hover effects, and loading states
+- **Responsive Layout** — Mobile-first design with collapsible sidebar navigation
+- **Dark Map Theme** — CartoDB dark tiles matching the overall UI aesthetic
+- **Consistent Typography** — Inter/system font stack with clear hierarchy
+
+## Deployment
+
+### Production Build
+
+```bash
+# Build the React client
+cd client && npm run build
+
+# The build output is in client/dist/
+# Serve with any static file server or configure Express to serve it
+```
+
+### Environment Setup for Production
+
+```bash
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/smart-city-command
+JWT_SECRET=<strong-random-secret>
+JWT_REFRESH_SECRET=<another-strong-secret>
+CLIENT_URL=https://your-domain.com
+GEMINI_API_KEY=<your-gemini-key>
+```
+
+### Deployment Platforms
+
+The application can be deployed to:
+- **Backend**: Railway, Render, AWS EC2, DigitalOcean, or any Node.js hosting
+- **Frontend**: Vercel, Netlify, or served via Express static middleware
+- **Database**: MongoDB Atlas (recommended for production)
+
+## Data Models
+
+The platform uses 11 Mongoose models:
+
+| Model | Purpose | Key Fields |
+|-------|---------|------------|
+| **User** | Platform users | name, email, password, role, zone, department |
+| **Incident** | Urban issues | type, title, location, severity, status, timeline |
+| **Department** | Govt departments | name, shortName, incidentTypes, slaHours, officers |
+| **Assignment** | Incident-dept links | incidentId, departmentId, officerId, slaDueBy, status |
+| **Feedback** | Citizen ratings | rating, responseSatisfaction, communicationClarity |
+| **Notification** | Alert messages | recipientId, channel, message, status |
+| **ContactMessage** | Dept messaging | from, department, subject, priority, status |
+| **AnalyticsAggregate** | Pre-computed stats | period, incidentCounts, avgTTA, avgTTR |
+| **IncidentIntelligence** | AI results | nlpCategory, priorityScore, sentimentScore |
+| **ResolutionLog** | Resolution records | action, proofUrls, timeSpentHours, tta, ttr |
+| **RiskForecast** | Predictive data | zone, riskScore, riskLevel, recommendations |
+
+## Team 12
+
+| Name | Roll No | GitHub |
+|------|---------|--------|
+| Balaji Arunachalam | CB.SC.U4CSE23759 | [arnchlmcodes](https://github.com/arnchlmcodes) |
+| Danvanth | CB.SC.U4CSE23241 | [realdanvanth](https://github.com/realdanvanth) |
+| Amal Godwin | CB.SC.U4CSE23407 | [AJgodwin](https://github.com/AJgodwin) |
+| Prithiv A | CB.SC.U4CSE23260 | [Prithiv-0](https://github.com/Prithiv-0) |
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+Built with care for Smart Cities | 23CSE461 - Full Stack Frameworks
