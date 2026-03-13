@@ -279,3 +279,156 @@ smart-city-command/
 | Reports | `/api/v1/reports` | Dynamic report generator, 11 report types |
 | Feedback | `/api/v1/feedback` | Submit, view own, per-incident, analytics |
 | Emergency SOS | `/api/v1/sos` | Submit SOS alert, view active alerts |
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** 18+ (LTS recommended)
+- **MongoDB** 6.0+ (local installation or MongoDB Atlas cloud)
+- **npm** 9+ (comes with Node.js)
+- **Git** for version control
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Prithiv-0/smart-city-command.git
+cd smart-city-command
+
+# Install root dependencies (concurrently)
+npm install
+
+# Install server dependencies
+cd server && npm install
+
+# Install client dependencies
+cd ../client && npm install
+
+# Return to root
+cd ..
+```
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Configure the following variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Backend server port | `5000` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/smart-city-command` |
+| `JWT_SECRET` | Secret key for JWT signing | `your-secret-key` |
+| `JWT_EXPIRES_IN` | Access token expiry | `15m` |
+| `JWT_REFRESH_SECRET` | Secret for refresh tokens | `your-refresh-secret` |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | `7d` |
+| `CLIENT_URL` | Frontend URL (for CORS) | `http://localhost:5173` |
+| `GEMINI_API_KEY` | Google Gemini API key (optional) | - |
+| `CLOUDINARY_URL` | Cloudinary connection (optional) | - |
+| `NODE_ENV` | Environment mode | `development` |
+
+## Database Seeding
+
+Populate the database with sample data for testing:
+
+```bash
+cd server
+
+# Full seed — creates users, departments, incidents, assignments,
+# feedback, analytics aggregates, and resolution logs
+npm run seed
+```
+
+This creates test accounts for all four roles with sample incidents across different types and statuses.
+
+## Running the Application
+
+```bash
+# From project root — runs both servers concurrently
+npm run dev
+
+# Or run separately:
+npm run server:dev    # Backend  → http://localhost:5000
+npm run client        # Frontend → http://localhost:5173
+```
+
+The API health check is available at: `GET http://localhost:5000/api/health`
+
+## Test Accounts
+
+After seeding, the following accounts are available:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@smartcity.gov.in` | `password123` |
+| Government Official | `official@smartcity.gov.in` | `password123` |
+| Field Officer | `ravi.officer@smartcity.gov.in` | `password123` |
+| Citizen | `citizen@example.com` | `password123` |
+
+## User Roles & Permissions
+
+| Permission | Citizen | Field Officer | Official | Admin |
+|-----------|---------|---------------|----------|-------|
+| Report incidents | Yes | Yes | No | Yes |
+| View own incidents | Yes | Yes | Yes | Yes |
+| View all incidents | No | Yes | Yes | Yes |
+| Command Center | No | Yes | Yes | Yes |
+| Verify incidents | No | No | Yes | Yes |
+| Assign incidents | No | No | Yes | Yes |
+| Acknowledge incidents | No | Yes | Yes | Yes |
+| Resolve incidents | No | Yes | No | Yes |
+| Close incidents | No | No | No | Yes |
+| View analytics | No | No | Yes | Yes |
+| Manage departments | No | No | No | Yes |
+| Audit reports | No | No | No | Yes |
+| Submit feedback | Yes | No | No | No |
+| Emergency SOS | Yes | Yes | Yes | Yes |
+
+## AI Classification System
+
+The platform uses a dual-strategy AI classification pipeline:
+
+### Primary: Google Gemini API
+When a `GEMINI_API_KEY` is configured, incidents are sent to Google's Gemini Pro model for:
+- **NLP Category** detection
+- **Priority scoring** (0-100 scale)
+- **Severity tag** (critical/high/medium/low)
+- **Sentiment analysis** (-1.0 to 1.0)
+- **Department suggestion**
+- **Classification confidence** (0.0-1.0)
+
+### Fallback: Rule-Based NLP
+When the API is unavailable, a keyword-matching engine:
+1. Scans incident title and description against keyword dictionaries
+2. Matches against 12 incident type categories
+3. Determines severity from urgency keywords
+4. Routes to the appropriate department via ROUTING_RULES map
+5. Calculates confidence based on keyword match count
+
+### Department Routing Rules
+
+| Incident Type | Department |
+|--------------|------------|
+| Pothole, Road Damage | Public Works Department (PWD) |
+| Traffic, Illegal Parking | Traffic Management Centre |
+| Flooding, Sewage | Stormwater Drainage Department |
+| Water Leak | Bangalore Water Supply Board (BWSSB) |
+| Streetlight | BESCOM Electrical Services |
+| Garbage | Bruhat Bengaluru Mahanagara Palike (BBMP) |
+| Accident, Safety Issue, Noise | City Police |
+
+## SLA & Escalation Engine
+
+The SLA (Service Level Agreement) engine runs as a cron job every 5 minutes:
+
+1. **Scans** all active assignments for SLA deadline breaches
+2. **Escalates** breached assignments (status -> 'escalated', counter incremented)
+3. **Notifies** all admin users via in-app notifications
+4. **Tracks** escalation history with timestamps
+
+Each department has a configurable `slaHours` field (default: 24 hours) used to calculate the deadline when an incident is assigned.
