@@ -1,3 +1,9 @@
+/**
+ * @file ResolveIncident.jsx - Incident Resolution Page
+ * @description Allows field officers to submit resolution details for assigned incidents,
+ * including proof uploads to document the completed resolution work.
+ */
+
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../utils/api'

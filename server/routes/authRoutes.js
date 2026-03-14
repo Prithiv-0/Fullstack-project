@@ -1,3 +1,22 @@
+/**
+ * authRoutes.js - Authentication & User Management Routes
+ *
+ * Endpoints:
+ *  POST   /register        - Create a new user account with validation
+ *  POST   /login           - Authenticate user and return JWT tokens
+ *  POST   /logout          - Invalidate user session (server acknowledgment)
+ *  POST   /refresh         - Exchange refresh token for new access token
+ *  GET    /profile         - Get authenticated user's profile with department
+ *  GET    /me              - Alias for /profile (backward compat)
+ *  PUT    /profile         - Update user profile (name, phone, zone, photo)
+ *  PUT    /updateprofile   - Legacy alias for profile update
+ *  POST   /forgot-password - Initiate password reset flow
+ *  POST   /reset-password  - Complete password reset with token
+ *
+ * Uses express-validator for input validation and JWT for authentication.
+ * All protected routes require a valid Bearer token via the authenticate middleware.
+ */
+
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');

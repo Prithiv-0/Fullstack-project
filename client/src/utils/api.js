@@ -1,3 +1,17 @@
+/**
+ * api.js - Axios HTTP Client Configuration
+ *
+ * Creates a pre-configured Axios instance pointing to the backend API.
+ * Base URL defaults to http://localhost:5000/api/v1 but can be overridden
+ * via the VITE_API_URL environment variable.
+ *
+ * Interceptors:
+ *  - Request: Automatically attaches the JWT Bearer token from localStorage
+ *    to every outgoing request's Authorization header.
+ *  - Response: On 401 Unauthorized, clears the stored token and redirects
+ *    the user to the login page for re-authentication.
+ */
+
 import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'

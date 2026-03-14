@@ -1,3 +1,13 @@
+/**
+ * @module routes/sos.routes
+ * @description Emergency SOS alert routes.
+ *   Handles submission of emergency alerts which auto-create critical incidents,
+ *   auto-assign to the police department with a 1-hour SLA, and notify all admins.
+ *
+ * @routes
+ *   POST /       - Submit an emergency SOS alert (citizen, field_officer, admin)
+ *   GET  /active - View all active (unresolved) SOS alerts (admin)
+ */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

@@ -1,6 +1,23 @@
+/**
+ * Incident.js - Mongoose Schema & Model for Urban Incidents
+ *
+ * Core entity of the platform — represents any urban issue reported by citizens
+ * or detected by IoT sensors. Tracks the full lifecycle from 'reported' through
+ * 'acknowledged', 'assigned', 'in_progress', 'resolved', and 'closed'.
+ *
+ * Supports 13 incident types (pothole, traffic, flooding, etc.), four severity
+ * levels (critical, high, medium, low), and a timeline array for complete
+ * status history tracking. Geographic coordinates (lat/lng) enable map-based
+ * visualization and proximity searches.
+ *
+ * Indexes are created on zone, status, type, severity, reportedBy, and
+ * createdAt for efficient querying and filtering.
+ */
+
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
+// All supported incident types used across the platform
 const INCIDENT_TYPES = [
     'pothole', 'traffic', 'flooding', 'streetlight',
     'garbage', 'accident', 'water_leak', 'road_damage',

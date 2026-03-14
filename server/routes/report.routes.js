@@ -1,3 +1,23 @@
+/**
+ * @module routes/report.routes
+ * @description Report generation routes for incident and operational data.
+ *   Provides a dynamic report generator endpoint plus individual convenience
+ *   endpoints for common report types including active incidents, severity,
+ *   department workload, response times, hotspots, trends, and audit logs.
+ *
+ * @routes
+ *   POST /generate                - Generate a report by type with optional filters
+ *   GET  /active-incidents        - All currently active (unresolved) incidents
+ *   GET  /incident-type-distribution - Incident counts grouped by type
+ *   GET  /severity-priority       - Critical and high-severity open incidents
+ *   GET  /dept-workload           - Department assignment workload breakdown
+ *   GET  /response-time           - Average time-to-acknowledge and time-to-resolve
+ *   GET  /hotspot                 - Top geographic hotspots by incident density
+ *   GET  /trend-pattern           - Daily incident counts over a time window
+ *   GET  /predictive-risk         - Latest risk forecast records
+ *   GET  /complaint-status        - Current user's reported incidents
+ *   GET  /audit-resolution        - Resolution audit log with officer details
+ */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

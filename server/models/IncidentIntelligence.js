@@ -1,6 +1,13 @@
-const mongoose = require('mongoose');
+/**
+ * IncidentIntelligence.js - AI Classification Results Model
+ *
+ * Stores the output of the AI classification pipeline for each incident.
+ * Contains NLP category, priority score (0-100), confidence level,
+ * sentiment score (-1 to 1), suggested department, and the LLM model used
+ * (either 'gemini-pro' or 'rule-based' fallback).
+ */
 
-const IncidentIntelligenceSchema = new mongoose.Schema({
+const mongoose = require('mongoose');
     incidentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Incident',

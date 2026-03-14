@@ -1,7 +1,14 @@
 /**
- * SLA Breach Ticker — runs every 5 minutes
- * Checks for assignments past their SLA deadline and marks as escalated
- * Spec Section 8.3
+ * slaTicker.js - SLA Breach Detection Cron Job (Spec Section 8.3)
+ *
+ * Runs every 5 minutes via node-cron to check for assignments that have
+ * exceeded their SLA deadline (slaDueBy). When a breach is detected:
+ *  1. The assignment status is set to 'escalated'
+ *  2. The escalation counter is incremented
+ *  3. All active admin users receive in-app notifications
+ *
+ * This ensures that overdue incidents are flagged for management attention
+ * and never silently fall through the cracks.
  */
 const cron = require('node-cron');
 const Assignment = require('../models/Assignment');

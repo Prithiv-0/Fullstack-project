@@ -1,3 +1,9 @@
+/**
+ * @file EditProfile.jsx - User Profile Editor
+ * @description Provides a form for users to update their profile information
+ * including name, phone number, zone, and profile photo.
+ */
+
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'

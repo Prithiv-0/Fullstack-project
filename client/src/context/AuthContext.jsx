@@ -1,3 +1,21 @@
+/**
+ * AuthContext.jsx - Global Authentication State Management
+ *
+ * Provides a React Context for authentication state across the entire app.
+ * Manages user session, JWT tokens (access + refresh), and auth operations.
+ *
+ * Exports:
+ *  - AuthProvider: Wraps the app and provides auth state to all children.
+ *    On mount, checks for a stored token and validates it by fetching the
+ *    user profile. Provides login, register, logout, and updateUser methods.
+ *
+ *  - useAuth(): Custom hook to access the auth context. Throws an error
+ *    if used outside of AuthProvider for safety.
+ *
+ * Token storage: localStorage ('token' for access, 'refreshToken' for refresh).
+ * Supports both legacy (token) and new (accessToken) response formats.
+ */
+
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../utils/api'
 

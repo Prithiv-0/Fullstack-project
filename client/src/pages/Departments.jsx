@@ -1,3 +1,9 @@
+/**
+ * @file Departments.jsx - Department Management Page
+ * @description Provides an interface to view and manage departments, officer assignments,
+ * workload distribution, and SLA configurations. Restricted to admin users only.
+ */
+
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
