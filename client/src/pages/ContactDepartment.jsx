@@ -1,9 +1,3 @@
-/**
- * @file ContactDepartment.jsx - Department Contact Form
- * @description Allows citizens to message departments directly, with options for
- * setting message priority and requesting a callback.
- */
-
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
 import { Send, Building2, ArrowLeft } from 'lucide-react'

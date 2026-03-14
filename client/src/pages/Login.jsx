@@ -1,12 +1,3 @@
-/**
- * Login.jsx - User Login Page Component
- *
- * Renders the login form with email and password fields. On submit,
- * authenticates the user via the AuthContext login method and redirects
- * to the dashboard on success. Shows error messages for invalid credentials.
- * Includes a link to the registration page for new users.
- */
-
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'

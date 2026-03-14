@@ -1,12 +1,6 @@
-/**
- * ContactMessage.js - Mongoose Schema & Model for Department Contact Messages
- *
- * Allows citizens to send direct messages to specific government departments.
- * Includes priority levels, preferred contact methods, callback requests,
- * and tracks the response lifecycle (pending → read → responded → closed).
- */
-
 const mongoose = require('mongoose');
+
+const ContactMessageSchema = new mongoose.Schema({
     from: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

@@ -1,20 +1,3 @@
-/**
- * @module routes/departmentRoutes
- * @description CRUD and operational routes for department management.
- *   Handles department listing, creation, updates, officer assignment,
- *   workload retrieval, incident queries, and inter-department contact messaging.
- *
- * @routes
- *   GET    /                  - List all active departments
- *   GET    /:id               - Get a single department with workload stats
- *   POST   /                  - Create a new department (admin)
- *   PUT    /:id               - Update a department (admin)
- *   GET    /:id/officers      - List officers in a department
- *   POST   /:id/officers      - Add an officer to a department (admin)
- *   GET    /workload/all      - Get workload summary for all departments (admin)
- *   GET    /:id/incidents     - Get paginated incidents assigned to a department
- *   POST   /:id/contact       - Send a contact message to a department
- */
 const express = require('express');
 const router = express.Router();
 const Department = require('../models/Department');

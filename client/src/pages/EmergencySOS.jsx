@@ -1,9 +1,3 @@
-/**
- * @file EmergencySOS.jsx - Emergency SOS Alert Page
- * @description Enables one-tap emergency reporting with automatic geolocation detection,
- * allowing citizens to quickly send an SOS alert with their current location.
- */
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'

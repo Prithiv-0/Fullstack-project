@@ -1,13 +1,3 @@
-/**
- * MapView.jsx - Interactive Leaflet Map Component
- *
- * Renders an interactive map using Leaflet.js with a dark-themed tile layer.
- * Displays incident markers with severity-coded colors (red=critical,
- * orange=high, yellow=medium, green=low). Supports popup details on click,
- * a heatmap layer for density visualization, and click-to-report for
- * setting new incident locations. Centers on Bangalore by default.
- */
-
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'

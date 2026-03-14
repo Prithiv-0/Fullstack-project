@@ -1,12 +1,3 @@
-/**
- * Register.jsx - User Registration Page Component
- *
- * Renders the registration form with fields for name, email, password,
- * phone, zone, and role selection. Validates input and creates a new
- * user account via the AuthContext register method. Redirects to the
- * dashboard upon successful registration. Includes a link to login.
- */
-
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'

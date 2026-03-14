@@ -1,9 +1,3 @@
-/**
- * @file FeedbackHub.jsx - Feedback History Dashboard
- * @description Lists all feedback previously submitted by the citizen, providing
- * a centralized view of their feedback history across resolved incidents.
- */
-
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MessageSquare, Star, Clock, ArrowRight } from 'lucide-react'

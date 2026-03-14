@@ -1,14 +1,7 @@
-/**
- * AnalyticsAggregate.js - Pre-Aggregated Analytics Data Model
- *
- * Stores pre-computed analytics summaries (daily, weekly, monthly) for
- * fast dashboard rendering. Includes incident counts by type/severity/status,
- * average Time-to-Acknowledge (TTA) and Time-to-Resolve (TTR), department
- * performance metrics, and citizen satisfaction averages.
- */
-
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+
+const AnalyticsAggregateSchema = new mongoose.Schema({
     aggId: {
         type: String,
         default: () => crypto.randomUUID(),

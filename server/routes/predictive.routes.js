@@ -1,16 +1,3 @@
-/**
- * @module routes/predictive.routes
- * @description Predictive analytics and risk forecasting routes.
- *   Generates zone-level risk forecasts from historical incident data,
- *   identifies geographic hotspots, and provides daily incident trend analysis.
- *
- * @routes
- *   POST /forecast       - Generate a risk forecast for a specific zone (admin)
- *   GET  /forecast/:zone - Get the latest forecast for a zone
- *   GET  /forecast       - Get the latest forecast for every zone (admin)
- *   GET  /hotspots       - Identify incident hotspots with optional zone/type filters
- *   GET  /trends         - Daily incident counts over a configurable time window
- */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

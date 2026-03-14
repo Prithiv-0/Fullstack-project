@@ -1,9 +1,3 @@
-/**
- * @file ModuleDiagram.jsx - System Module Architecture Diagram
- * @description Renders a visual diagram of the platform's module architecture,
- * illustrating the relationships and structure of system components.
- */
-
 import { useState } from 'react'
 import {
     Database,

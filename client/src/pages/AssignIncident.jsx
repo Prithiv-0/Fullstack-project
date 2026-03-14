@@ -1,9 +1,3 @@
-/**
- * @file AssignIncident.jsx - Incident Assignment Page
- * @description Provides an interface to assign incidents to departments and officers,
- * including SLA deadline configuration for tracking resolution timelines.
- */
-
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../utils/api'

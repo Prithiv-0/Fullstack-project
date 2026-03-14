@@ -1,16 +1,3 @@
-/**
- * @module routes/notification.routes
- * @description Notification management routes for alerts and broadcasts.
- *   Supports sending targeted notifications, viewing notification history,
- *   marking notifications as read, and broadcasting messages to citizens by zone.
- *
- * @routes
- *   POST /send         - Send notification(s) to specific user(s) (admin)
- *   GET  /history      - Get the authenticated user's notification history (paginated)
- *   PUT  /:id/read     - Mark a notification as read
- *   GET  /unread-count - Get count of unread notifications for the current user
- *   POST /broadcast    - Broadcast a message to all citizens or a specific zone (admin)
- */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

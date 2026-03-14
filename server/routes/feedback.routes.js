@@ -1,15 +1,3 @@
-/**
- * @module routes/feedback.routes
- * @description Citizen feedback routes for post-resolution incident reviews.
- *   Allows citizens to submit ratings and comments after an incident is resolved,
- *   and provides admin-facing aggregate satisfaction analytics.
- *
- * @routes
- *   POST /              - Submit feedback for a resolved incident (citizen)
- *   GET  /my            - Get all feedback submitted by the current citizen
- *   GET  /incident/:id  - Get feedback for a specific incident (admin/official)
- *   GET  /summary       - Aggregate feedback analytics and rating distribution (admin)
- */
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/authMiddleware');

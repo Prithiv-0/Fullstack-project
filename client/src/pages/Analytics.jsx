@@ -1,10 +1,3 @@
-/**
- * @file Analytics.jsx - City-Wide Analytics Dashboard
- * @description Recharts-powered dashboard presenting incident trends, type and severity
- * distributions, department performance metrics, and response time analytics.
- * Accessible to admin and official roles only.
- */
-
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts'

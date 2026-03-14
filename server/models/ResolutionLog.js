@@ -1,14 +1,7 @@
-/**
- * ResolutionLog.js - Incident Resolution Tracking Model
- *
- * Records each resolution action taken by field officers. Captures the
- * action description, proof URLs (photos/videos), time spent, materials
- * used, TTA (Time-to-Acknowledge) and TTR (Time-to-Resolve) in minutes,
- * and before/after status transitions.
- */
-
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+
+const ResolutionLogSchema = new mongoose.Schema({
     logId: {
         type: String,
         default: () => crypto.randomUUID(),

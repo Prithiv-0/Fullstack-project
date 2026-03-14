@@ -1,16 +1,7 @@
-/**
- * Department.js - Mongoose Schema & Model for Government Departments
- *
- * Represents a city government department that handles specific types of
- * urban incidents. Each department has a set of incidentTypes it handles,
- * a currentLoad tracking active assignments, SLA hours for deadline
- * calculation, and a list of officers assigned to it.
- *
- * Departments: PWD (Public Works), TMC (Traffic), BBMP, BWSSB, BESCOM, Police, etc.
- */
-
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+
+const DepartmentSchema = new mongoose.Schema({
     deptId: {
         type: String,
         default: () => crypto.randomUUID(),

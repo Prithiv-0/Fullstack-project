@@ -1,13 +1,3 @@
-/**
- * CommandCenter.jsx - Incident Command Center for Officials & Admin
- *
- * A real-time operational dashboard for government officials and admins.
- * Displays all incidents with filtering, sorting, and status management.
- * Includes a map view of incidents, department workload stats, and
- * quick-action buttons for verify, assign, and acknowledge operations.
- * Accessible to field_officer, government_official, and admin roles.
- */
-
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'

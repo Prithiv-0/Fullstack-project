@@ -1,13 +1,3 @@
-/**
- * ReportIncident.jsx - Incident Reporting Form Page
- *
- * Allows citizens and field officers to report new urban incidents.
- * Features a multi-step form with incident type selection, title/description,
- * location picker (with interactive Leaflet map), severity level, emergency
- * toggle, and media upload support. Submits to POST /api/v1/incidents
- * and redirects to the dashboard on success.
- */
-
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'

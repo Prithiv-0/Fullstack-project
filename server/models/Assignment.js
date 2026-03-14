@@ -1,16 +1,7 @@
-/**
- * Assignment.js - Mongoose Schema & Model for Incident-to-Department Assignments
- *
- * Links an incident to a department (and optionally to a specific officer).
- * Tracks assignment status through: pending → acknowledged → in_progress → completed.
- * Supports SLA deadline tracking (slaDueBy), escalation counting, and
- * both manual and automatic assignment types.
- *
- * Indexed on incidentId and (departmentId + status) for efficient lookups.
- */
-
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+
+const AssignmentSchema = new mongoose.Schema({
     assignmentId: {
         type: String,
         default: () => crypto.randomUUID(),

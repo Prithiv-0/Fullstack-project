@@ -1,9 +1,3 @@
-/**
- * @file FeedbackForm.jsx - Incident Feedback Submission
- * @description Citizen feedback form with rating scales for resolution satisfaction,
- * communication quality, and ease of use after an incident has been resolved.
- */
-
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'

@@ -1,10 +1,3 @@
-/**
- * @file IncidentDetails.jsx - Single Incident Detail View
- * @description Displays complete incident information including the event timeline,
- * assignment details, map location, and action buttons for verify/assign/resolve
- * operations based on the authenticated user's role.
- */
-
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'

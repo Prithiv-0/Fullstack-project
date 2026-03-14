@@ -1,13 +1,3 @@
-/**
- * Navbar.jsx - Responsive Navigation Sidebar Component
- *
- * Renders a vertical sidebar navigation with role-based menu items.
- * Uses Lucide React icons and highlights the active route. Menu items
- * are dynamically filtered based on the user's role (citizen, field_officer,
- * government_official, admin). Includes a collapsible mobile-responsive
- * hamburger toggle and a logout button at the bottom.
- */
-
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {

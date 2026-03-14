@@ -1,26 +1,3 @@
-/**
- * incidentRoutes.js - Incident Management API Routes
- *
- * Core CRUD and lifecycle management for urban incidents.
- *
- * Endpoints:
- *  POST   /                  - Submit a new incident (citizen, officer, admin)
- *  GET    /                  - List incidents with filters and pagination
- *  GET    /my                - Get incidents reported by the current user
- *  GET    /nearby            - Find incidents near a lat/lng coordinate
- *  GET    /:id               - Get single incident with assignment details
- *  PUT    /:id/verify        - Verify or reject an incident (admin, official)
- *  PUT    /:id/assign        - Assign incident to department/officer
- *  PUT    /:id/acknowledge   - Mark incident as in_progress (officer)
- *  PUT    /:id/resolve       - Submit resolution with proof (field_officer)
- *  PUT    /:id/close         - Close a resolved incident (admin only)
- *  DELETE /:id               - Soft-delete an incident (admin only)
- *  POST   /:id/feedback      - Submit citizen feedback on resolution
- *
- * After creation, incidents are asynchronously processed by the AI classification
- * service and auto-routed to the appropriate department via postIncidentCreation().
- */
-
 const express = require('express');
 const router = express.Router();
 const Incident = require('../models/Incident');

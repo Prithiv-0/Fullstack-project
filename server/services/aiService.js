@@ -1,25 +1,9 @@
 /**
- * aiService.js - AI Classification Service for Urban Incidents
- *
- * This module powers the intelligent classification system (Spec Section 8.1).
- * It provides a dual-strategy approach:
- *
- *  1. PRIMARY: Google Gemini API — sends incident details to the Gemini LLM
- *     for NLP-based classification, priority scoring, sentiment analysis,
- *     and department routing suggestions. Requires GEMINI_API_KEY env var.
- *
- *  2. FALLBACK: Rule-based classification — uses keyword matching against
- *     predefined dictionaries to determine incident type, severity level,
- *     and suggested department when the AI API is unavailable.
- *
- * The classifyIncident() function is the main entry point, called automatically
- * after each new incident is created (via postIncidentCreation in incidentRoutes).
- *
- * Output fields: nlpCategory, priorityTag, priorityScore (0-100),
- * classificationConfidence (0-1), sentimentScore (-1 to 1), suggestedDepartment.
+ * AI Service for Incident Classification
+ * Uses Gemini API when available, falls back to rule-based classification
  */
 
-// Keyword mappings for rule-based incident type detection (fallback strategy)
+// Keyword mappings for incident types (fallback)
 const typeKeywords = {
     pothole: ['pothole', 'hole', 'pit', 'crater', 'dip', 'road damage', 'broken road'],
     traffic: ['traffic', 'congestion', 'jam', 'signal', 'blocked', 'slow moving'],
@@ -35,7 +19,6 @@ const typeKeywords = {
     sewage: ['sewage', 'sewer', 'drain', 'smell', 'stink', 'manhole', 'overflow']
 };
 
-// Severity keyword mappings — used to determine priority from incident text
 const severityKeywords = {
     critical: ['urgent', 'emergency', 'immediate', 'danger', 'critical', 'life threatening', 'injured', 'fire'],
     high: ['severe', 'serious', 'major', 'large', 'widespread', 'blocked', 'hazardous'],
@@ -43,8 +26,8 @@ const severityKeywords = {
     low: ['minor', 'small', 'slight', 'occasional']
 };
 
-// Department routing rules — maps incident types to responsible departments
 const ROUTING_RULES = {
+    pothole: 'Public Works Department',
     road_damage: 'Public Works Department',
     traffic: 'Traffic Management Centre',
     illegal_parking: 'Traffic Management Centre',
